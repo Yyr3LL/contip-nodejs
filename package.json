@@ -1,0 +1,22 @@
+{
+  "name": "contip-nodejs",
+  "version": "1.0.0",
+  "description": "Writing ConTip project in node js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yyr3LL/contip-nodejs.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Yyr3LL/contip-nodejs/issues"
+  },
+  "homepage": "https://github.com/Yyr3LL/contip-nodejs#readme",
+  "dependencies": {
+    "restana": "^4.3.5"
+  }
+}
