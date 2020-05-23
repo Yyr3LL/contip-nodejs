@@ -5,31 +5,41 @@ const sequelize = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
 
 const User = sequelize.define('User', {
 
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-        unique: true
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            unique: true
+        },
+
+        username: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true
+        },
+
+        email: {
+            type: DataTypes.STRING,
+            defaultValue: "",
+            unique: true
+        },
+
+        password: {
+            type: DataTypes.STRING(64),
+            is: /^[0-9a-f]{64}$/i
+        }
+
     },
+    {
+        instanceMethods: {
+            toJSON: function () {
+                let values = Object.assign({}, this.get());
 
-    username: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-    },
-
-    email: {
-        type: DataTypes.STRING,
-        defaultValue: "",
-        unique: true
-    },
-
-    hashedPassword: {
-        type: DataTypes.STRING(64),
-        is: /^[0-9a-f]{64}$/i
-    }
-
-});
+                delete values.password;
+                return values;
+            }
+        }
+    });
 
 
 const Genre = sequelize.define('Genre', {
@@ -222,6 +232,17 @@ const UserWatchedList = sequelize.define('UserWatchedList', {
 });
 
 
-(async () => {
-    await sequelize.sync({force: true});
-})();
+// (async () => {
+//     await sequelize.sync({force: true});
+//
+// })();
+
+module.exports = {
+    User,
+    Genre,
+    Movie,
+    Movie_Genre,
+    Rating,
+    UserPreferences,
+    UserWatchedList
+}
