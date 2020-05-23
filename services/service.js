@@ -1,16 +1,19 @@
 const sequelize = require('sequelize');
 const User = require('../models').User;
 const Genre = require('../models').Genre;
+const Movie = require('../models').Movie;
+const Movie_Genre = require('../models').Movie_Genre;
 
 
 const seq = new sequelize.Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
+
 
 const createUser = async ({username, email, password, re_password}) => {
     if (password === re_password) {
         try {
             return await User.create({username, email, password, re_password});
         } catch (err) {
-            console.log("Error: " + ":" + err.name + "\n" + err.stack);
+            console.log(`Error: ${err.name}  ${err.stack}`);
         }
     }
 
@@ -20,17 +23,21 @@ const createUser = async ({username, email, password, re_password}) => {
 
 const getUserById = async ({id}) => {
     let user = await seq.query(`SELECT \"id\", \"username\", \"email\", \"createdAt\", \"updatedAt\" FROM \"Users\" AS \"User\" WHERE \"User\".\"id\" = ${id};\n`)
+    if (user === null) {
+        return {msg: "User not found"};
+    }
     delete user.password;
     return user[0][0];
-
 };
 
 
 const createGenre = async ({name}) => {
     try {
+
         return await Genre.create({name});
+
     } catch (err) {
-        console.log("Error: " + ":" + err.name + "\n" + err.stack);
+        console.log(`Error: ${err.name}  ${err.stack}`);
         return {msg: "Something went wrong"};
     }
 };
@@ -38,9 +45,11 @@ const createGenre = async ({name}) => {
 
 const listGenre = async () => {
     try {
+
         return await Genre.findAll();
+
     } catch (err) {
-        console.log("Error: " + ":" + err.name + "\n" + err.stack);
+        console.log(`Error: ${err.name}  ${err.stack}`);
         return {msg: "Something went wrong"};
     }
 };
@@ -48,16 +57,142 @@ const listGenre = async () => {
 
 const getGenre = async (id) => {
     try {
+
         const genre = await Genre.findByPk(id);
         if (genre === null) {
-            return {msg: "Genre with id of " + id + " not found"}
+            return {msg: "Genre with id of " + id + " not found"};
         }
         return genre;
+
     } catch (err) {
-        console.log("Error: " + ":" + err.name + "\n" + err.stack);
+        console.log(`Error: ${err.name}  ${err.stack}`);
         return {msg: "Something went wrong"};
     }
 };
+
+
+const get_clear_movie = async (movie) => {
+
+    const movie_genres = await Movie_Genre.findAll({
+        where: {
+            movie_id: movie.id
+        }
+    })
+
+    movie["dataValues"]["genres"] = movie_genres.map(item => {
+        return item.genre_id
+    });
+
+    delete movie["dataValues"]["createdAt"];
+    delete movie["dataValues"]["updatedAt"];
+
+    return movie;
+}
+
+const createMovie = async ({title, imdb, tmdb, genres}) => {
+    try {
+
+        const movie = await Movie.create({title, imdb, tmdb});
+        const cur_movie_id = movie.id;
+        genres.forEach(genre_id => {
+            Movie_Genre.create({movie_id: cur_movie_id, genre_id: genre_id});
+        });
+        return movie;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+}
+
+
+const listMovie = async () => {
+    try {
+
+        let movies = await Movie.findAll();
+
+        for (let movie of movies) {
+            movie = await get_clear_movie(movie);
+        }
+
+        return movies;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+}
+
+
+const getMovie = async (id) => {
+    try {
+
+        let movie = await Movie.findByPk(id);
+
+        if (movie === null) {
+            return {msg: "Movie not found"};
+        }
+
+        return await get_clear_movie(movie);
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+}
+
+
+const putMovie = async ({id, body}) => {
+    try {
+
+        let movie = await Movie.findByPk(id);
+
+        if (movie === null) {
+            return {msg: "Movie not found"};
+        }
+
+        movie = await get_clear_movie(movie);
+
+        let fields = ['title', 'imdb', 'tmdb', 'genres'];
+        let data = {};
+
+        for (let field of fields) {
+            if (field in body) {
+                data[field] = body[field];
+            }
+        }
+
+        await Movie.update(data, {where: {id: movie.id}});
+        movie = await Movie.findByPk(id);
+        movie = await get_clear_movie(movie);
+
+        return movie;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+}
+
+
+const destroyMovie = async (id) => {
+    try {
+
+        let movie = await Movie.findByPk(id);
+
+        if (movie === null) {
+            return {msg: "Movie not found"};
+        }
+
+        await Movie.destroy({where: {id: movie.id}});
+
+        return movie;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+}
 
 
 module.exports = {
@@ -65,5 +200,10 @@ module.exports = {
     getUserById,
     createGenre,
     listGenre,
-    getGenre
+    getGenre,
+    createMovie,
+    listMovie,
+    getMovie,
+    putMovie,
+    destroyMovie
 };

@@ -53,7 +53,8 @@ const Genre = sequelize.define('Genre', {
 
     name: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: true
     },
 
 });
@@ -70,6 +71,17 @@ const Movie = sequelize.define('Movie', {
 
     title: {
         type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+
+    imdb: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+
+    tmdb: {
+        type: DataTypes.INTEGER,
         allowNull: false
     }
 
@@ -84,10 +96,10 @@ const Movie_Genre = sequelize.define('Movie_Genre', {
         autoIncrement: true
     },
 
-    user_id: {
+    movie_id: {
         type: DataTypes.INTEGER,
         references: {
-            model: User,
+            model: Movie,
             key: 'id',
         },
         validate: {
@@ -232,10 +244,12 @@ const UserWatchedList = sequelize.define('UserWatchedList', {
 });
 
 
-// (async () => {
-//     await sequelize.sync({force: true});
-//
-// })();
+if (process.argv[2] === "sync") {
+    (async () => {
+        await sequelize.sync({force: true});
+
+    })();
+}
 
 module.exports = {
     User,
