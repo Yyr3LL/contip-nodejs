@@ -5,41 +5,31 @@ const sequelize = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
 
 const User = sequelize.define('User', {
 
-        id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true,
-            unique: true
-        },
-
-        username: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            unique: true
-        },
-
-        email: {
-            type: DataTypes.STRING,
-            defaultValue: "",
-            unique: true
-        },
-
-        password: {
-            type: DataTypes.STRING(64),
-            is: /^[0-9a-f]{64}$/i
-        }
-
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+        unique: true
     },
-    {
-        instanceMethods: {
-            toJSON: function () {
-                let values = Object.assign({}, this.get());
 
-                delete values.password;
-                return values;
-            }
-        }
-    });
+    username: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+
+    email: {
+        type: DataTypes.STRING,
+        defaultValue: "",
+        unique: true
+    },
+
+    password: {
+        type: DataTypes.STRING(64),
+        is: /^[0-9a-f]{64}$/i
+    }
+
+});
 
 
 const Genre = sequelize.define('Genre', {
@@ -55,9 +45,9 @@ const Genre = sequelize.define('Genre', {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true
-    },
+    }
 
-});
+}, {timestamps: false});
 
 
 const Movie = sequelize.define('Movie', {
@@ -85,16 +75,10 @@ const Movie = sequelize.define('Movie', {
         allowNull: false
     }
 
-});
+}, {timestamps: false});
 
 
 const Movie_Genre = sequelize.define('Movie_Genre', {
-
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
 
     movie_id: {
         type: DataTypes.INTEGER,
@@ -121,6 +105,19 @@ const Movie_Genre = sequelize.define('Movie_Genre', {
         }
     },
 
+}, {timestamps: false});
+
+
+Movie.belongsToMany(Genre, {
+    through: 'Movie_Genre',
+    onDelete: 'CASCADE',
+    foreignKey: 'movie_id'
+});
+
+Genre.belongsToMany(Movie, {
+    through: 'Movie_Genre',
+    onDelete: 'CASCADE',
+    foreignKey: 'genre_id'
 });
 
 
@@ -167,7 +164,7 @@ const Rating = sequelize.define('Rating', {
         }
     },
 
-});
+}, {timestamps: false});
 
 
 const UserPreferences = sequelize.define('UserPreferences', {
@@ -204,7 +201,7 @@ const UserPreferences = sequelize.define('UserPreferences', {
         }
     },
 
-});
+}, {timestamps: false});
 
 
 const UserWatchedList = sequelize.define('UserWatchedList', {
@@ -241,7 +238,7 @@ const UserWatchedList = sequelize.define('UserWatchedList', {
         }
     },
 
-});
+}, {timestamps: false});
 
 
 if (process.argv[2] === "sync") {

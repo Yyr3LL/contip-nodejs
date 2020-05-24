@@ -73,18 +73,11 @@ const getGenre = async (id) => {
 
 const get_clear_movie = async (movie) => {
 
-    const movie_genres = await Movie_Genre.findAll({
-        where: {
-            movie_id: movie.id
-        }
-    })
-
-    movie["dataValues"]["genres"] = movie_genres.map(item => {
-        return item.genre_id
+    movie['dataValues']['genres'] = movie['dataValues']['Genres'].map(item => {
+        return item.id
     });
 
-    delete movie["dataValues"]["createdAt"];
-    delete movie["dataValues"]["updatedAt"];
+    delete movie['dataValues']['Genres']
 
     return movie;
 }
@@ -109,7 +102,9 @@ const createMovie = async ({title, imdb, tmdb, genres}) => {
 const listMovie = async () => {
     try {
 
-        let movies = await Movie.findAll();
+        let movies = await Movie.findAll({
+            include: Genre
+        });
 
         for (let movie of movies) {
             movie = await get_clear_movie(movie);
@@ -119,7 +114,7 @@ const listMovie = async () => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return {msg: 'Something went wrong'};
     }
 }
 
@@ -127,10 +122,15 @@ const listMovie = async () => {
 const getMovie = async (id) => {
     try {
 
-        let movie = await Movie.findByPk(id);
+        let movie = await Movie.findOne({
+            where: {
+                id: id
+            },
+            include: Genre
+        });
 
         if (movie === null) {
-            return {msg: "Movie not found"};
+            return {msg: 'Movie not found'};
         }
 
         return await get_clear_movie(movie);
@@ -145,7 +145,12 @@ const getMovie = async (id) => {
 const putMovie = async ({id, body}) => {
     try {
 
-        let movie = await Movie.findByPk(id);
+        let movie = await Movie.findOne({
+            where: {
+                id: id
+            },
+            include: Genre
+        });
 
         if (movie === null) {
             return {msg: "Movie not found"};
@@ -158,13 +163,9 @@ const putMovie = async ({id, body}) => {
 
         for (let field of fields) {
             if (field in body) {
-                data[field] = body[field];
+                [data[field], movie[field]] = [body[field], body[field]]
             }
         }
-
-        await Movie.update(data, {where: {id: movie.id}});
-        movie = await Movie.findByPk(id);
-        movie = await get_clear_movie(movie);
 
         return movie;
 
@@ -184,9 +185,10 @@ const destroyMovie = async (id) => {
             return {msg: "Movie not found"};
         }
 
+        await Movie_Genre.destroy({where: {movie_id: movie.id}});
         await Movie.destroy({where: {id: movie.id}});
 
-        return movie;
+        return {msg: `Movie with id: ${movie.id} has been successfully deleted`};
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
