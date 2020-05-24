@@ -59,7 +59,7 @@ app.get(
 app.get(
     '/api/v1/app/genre/:id',
     async (req, res) => {
-        const id = req.params.id;
+        const id = await req.params.id;
         const genre = await service.getGenre(id);
         res.send(genre);
     });
@@ -88,7 +88,7 @@ app.get(
 app.get(
     '/api/v1/app/movie/:id',
     async (req, res) => {
-        const id = req.params.id;
+        const id = await req.params.id;
         const movie = await service.getMovie(id);
         res.send(movie);
     });
@@ -97,18 +97,56 @@ app.get(
 app.put(
     '/api/v1/app/movie/:id',
     async (req, res) => {
-        const id = req.params.id;
-        const body = req.body;
+        const id = await req.params.id;
+        const body = await req.body;
         const movie = await service.putMovie({id, body});
         res.send(movie);
     });
 
+
 app.delete(
     '/api/v1/app/movie/:id',
     async (req, res) => {
-        const id = req.params.id;
+        const id = await req.params.id;
         const movie = await service.destroyMovie(id);
         res.send(movie);
+    });
+
+
+app.post(
+    '/api/v1/app/rating/create',
+    async (req, res) => {
+        const {value, user_id, movie_id} = await req.body;
+        const rating = await service.createRating({value, user_id, movie_id});
+        res.send(rating);
+    });
+
+
+app.get(
+    '/api/v1/app/rating/:id',
+    async (req, res) => {
+        const id = await req.params.id;
+        const movie = await service.getRating(id);
+        res.send(movie);
+    });
+
+
+app.put(
+    '/api/v1/app/rating/:id',
+    async (req, res) => {
+        const id = await req.params.id;
+        const body = await req.body;
+        const movie = await service.putRating({id, body});
+        res.send(movie);
+    });
+
+
+app.delete(
+    '/api/v1/app/rating/:id',
+    async (req, res) => {
+        const id = await req.params.id;
+        const rating = await service.destroyRating(id);
+        res.send(rating);
     });
 
 

@@ -3,6 +3,7 @@ const User = require('../models').User;
 const Genre = require('../models').Genre;
 const Movie = require('../models').Movie;
 const Movie_Genre = require('../models').Movie_Genre;
+const Rating = require('../models').Rating;
 
 
 const seq = new sequelize.Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
@@ -197,6 +198,139 @@ const destroyMovie = async (id) => {
 }
 
 
+const check_invalid_rating_values = async (user_id, movie_id) => {
+
+    let msg = {};
+
+    if (!await Movie.findOne({
+        where: {
+            id: movie_id
+        }
+    })) {
+        msg['movie_err'] = '\nMovie not found';
+    }
+
+    if (!await User.findOne({
+        where: {
+            id: user_id
+        }
+    })) {
+        msg['user_err'] = '\nUser not found';
+    }
+
+    if ('movie_err' in msg || 'user_err' in msg) {
+        return msg;
+    }
+
+    return false;
+
+};
+
+const createRating = async ({value, movie_id, user_id}) => {
+    try {
+
+        msg = check_invalid_rating_values({user_id, movie_id});
+
+        if (!msg) {
+            return msg;
+        }
+
+        return await Rating.create({value, user_id, movie_id});
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+};
+
+
+const getRating = async (id) => {
+    try {
+
+        let rating = await Rating.findOne({
+            where: {
+                id: id
+            }
+        });
+
+        if (rating === null) {
+            return {msg: "Rating not found"};
+        }
+
+        return rating;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+};
+
+
+const putRating = async ({id, body}) => {
+    try {
+
+        console.log(id);
+        let rating = await Rating.findOne({
+            where: {
+                id: id
+            }
+        });
+
+        if (rating === null) {
+            return {msg: "Rating not found"};
+        }
+
+        let fields = ['value', 'user_id', 'movie_id'];
+        let data = {}
+        let msg;
+
+        for (let field of fields) {
+            if (field in body) {
+                [rating[field], data[field]] = [body[field], body[field]];
+            }
+        }
+
+        if (data.hasOwnProperty('user_id') && data.hasOwnProperty('movie_id')) {
+            msg = await check_invalid_rating_values(data.user_id, data.movie_id);
+
+            if (!msg) {
+                Rating.update(data, {where: {id: id}});
+                return rating;
+            }
+
+            return msg;
+        }
+
+        return {msg: "Not all the values were provided"};
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+
+};
+
+
+const destroyRating = async (id) => {
+    try {
+
+        let rating = await Rating.findByPk(id);
+
+        if (rating === null) {
+            return {msg: "Movie not found"};
+        }
+
+        await Rating.destroy({where: {id: rating.id}});
+
+        return {msg: `Rating with id: ${rating.id} has been successfully deleted`};
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+}
+
+
 module.exports = {
     createUser,
     getUserById,
@@ -207,5 +341,9 @@ module.exports = {
     listMovie,
     getMovie,
     putMovie,
-    destroyMovie
+    destroyMovie,
+    createRating,
+    getRating,
+    putRating,
+    destroyRating
 };
