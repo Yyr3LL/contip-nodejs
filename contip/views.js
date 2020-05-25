@@ -155,14 +155,35 @@ const putMovie = async ({id, body}) => {
 
         movie = await get_clear_movie(movie);
 
-        let fields = ['title', 'imdb', 'tmdb', 'genres'];
-        let data = {};
+        const fields = ['title', 'imdb', 'tmdb', 'genres'];
+
+        if (fields.map(field => {
+            return body.hasOwnProperty(field);
+        }).includes(false)) {
+            return {msg: "Please provide all the values"};
+        }
 
         for (let field of fields) {
-            if (field in body) {
-                [data[field], movie[field]] = [body[field], body[field]]
-            }
+            movie[field] = body[field];
         }
+
+        await Movie_Genre.destroy({where: {movie_id: id}});
+
+        let checking_data = [];
+
+        for (let genre_id of body.genres) {
+            checking_data.push(await check_existing_data(Genre, genre_id));
+        }
+
+        if (checking_data.includes(false)) {
+            return {msg: "Incorrect data"};
+        }
+
+        for (let genre_id of body.genres) {
+            await Movie_Genre.create({movie_id: id, genre_id: genre_id});
+        }
+
+        await Movie.update(body, {where: {id: id}});
 
         return movie;
 
@@ -250,6 +271,8 @@ const putRating = async (id, value) => {
             return {msg: "Rating not found"};
         }
 
+        value = parseInt(value, 10);
+
         await Rating.update({value: value}, {where: {id: id}});
 
         rating.value = value;
@@ -308,7 +331,7 @@ const putWatchedMovies = async ({user_id, movies}) => {
             await UserWatchedMovie.create({user_id, movie_id});
         }
 
-       return movies;
+        return movies;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
@@ -339,25 +362,6 @@ const getWatchedMovies = async (user_id) => {
         return {msg: "Something went wrong"};
     }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const putPreferences = async ({user_id, genres}) => {
     try {
@@ -415,6 +419,7 @@ const getPreferences = async (user_id) => {
         return {msg: "Something went wrong"};
     }
 };
+
 
 module.exports = {
     createUser,
