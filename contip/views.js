@@ -4,21 +4,29 @@ const Genre = require('../models').Genre;
 const Movie = require('../models').Movie;
 const Movie_Genre = require('../models').Movie_Genre;
 const Rating = require('../models').Rating;
+const UserWatchedMovie = require('../models').UserWatchedMovie;
+const UserPreference = require('../models').UserPreference;
+
+const check_invalid_rating_values = require('./service').check_invalid_rating_values;
+const check_existing_data = require('./service').check_existing_data;
+const get_clear_movie = require('./service').get_clear_movie;
 
 
 const seq = new sequelize.Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
 
 
 const createUser = async ({username, email, password, re_password}) => {
-    if (password === re_password) {
-        try {
-            return await User.create({username, email, password, re_password});
-        } catch (err) {
-            console.log(`Error: ${err.name}  ${err.stack}`);
-        }
-    }
+    try {
 
-    return {msg: "re_password does not match"};
+        if (password !== re_password) {
+            return {msg: "re_password does not match"};
+        }
+        return await User.create({username, email, password, re_password});
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
 };
 
 
@@ -71,17 +79,6 @@ const getGenre = async (id) => {
     }
 };
 
-
-const get_clear_movie = async (movie) => {
-
-    movie['dataValues']['genres'] = movie['dataValues']['Genres'].map(item => {
-        return item.id
-    });
-
-    delete movie['dataValues']['Genres']
-
-    return movie;
-}
 
 const createMovie = async ({title, imdb, tmdb, genres}) => {
     try {
@@ -186,7 +183,7 @@ const destroyMovie = async (id) => {
             return {msg: "Movie not found"};
         }
 
-        await Movie_Genre.destroy({where: {movie_id: movie.id}});
+        // await Movie_Genre.destroy({where: {movie_id: movie.id}});
         await Movie.destroy({where: {id: movie.id}});
 
         return {msg: `Movie with id: ${movie.id} has been successfully deleted`};
@@ -198,41 +195,16 @@ const destroyMovie = async (id) => {
 }
 
 
-const check_invalid_rating_values = async (user_id, movie_id) => {
-
-    let msg = {};
-
-    if (!await Movie.findOne({
-        where: {
-            id: movie_id
-        }
-    })) {
-        msg['movie_err'] = '\nMovie not found';
-    }
-
-    if (!await User.findOne({
-        where: {
-            id: user_id
-        }
-    })) {
-        msg['user_err'] = '\nUser not found';
-    }
-
-    if ('movie_err' in msg || 'user_err' in msg) {
-        return msg;
-    }
-
-    return false;
-
-};
-
 const createRating = async ({value, movie_id, user_id}) => {
     try {
 
-        msg = check_invalid_rating_values({user_id, movie_id});
+        let list = [
+            await check_existing_data(User, user_id),
+            await check_existing_data(Movie, movie_id)
+        ]
 
-        if (!msg) {
-            return msg;
+        if (list.includes(false)) {
+            return {msg: "Incorrect data"};
         }
 
         return await Rating.create({value, user_id, movie_id});
@@ -266,10 +238,9 @@ const getRating = async (id) => {
 };
 
 
-const putRating = async ({id, body}) => {
+const putRating = async (id, value) => {
     try {
 
-        console.log(id);
         let rating = await Rating.findOne({
             where: {
                 id: id
@@ -280,28 +251,10 @@ const putRating = async ({id, body}) => {
             return {msg: "Rating not found"};
         }
 
-        let fields = ['value', 'user_id', 'movie_id'];
-        let data = {}
-        let msg;
+        await Rating.update({value: value}, {where: {id: id}});
 
-        for (let field of fields) {
-            if (field in body) {
-                [rating[field], data[field]] = [body[field], body[field]];
-            }
-        }
-
-        if (data.hasOwnProperty('user_id') && data.hasOwnProperty('movie_id')) {
-            msg = await check_invalid_rating_values(data.user_id, data.movie_id);
-
-            if (!msg) {
-                Rating.update(data, {where: {id: id}});
-                return rating;
-            }
-
-            return msg;
-        }
-
-        return {msg: "Not all the values were provided"};
+        rating.value = value;
+        return rating;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
@@ -331,6 +284,64 @@ const destroyRating = async (id) => {
 }
 
 
+const putWatchedMovies = async ({user_id, movies}) => {
+    try {
+
+        let list = [
+            await check_existing_data(User, user_id),
+        ]
+
+        for (let movie_id of movies) {
+            list.push(await check_existing_data(Movie, movie_id))
+        }
+
+        if (list.includes(false)) {
+            return {msg: "Incorrect data"};
+        }
+
+        await UserWatchedMovie.destroy({
+            where: {
+                user_id: user_id
+            }
+        });
+
+        for (let movie_id of movies) {
+            await UserWatchedMovie.create({user_id, movie_id});
+        }
+
+       return movies;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+};
+
+
+const getWatchedMovies = async (user_id) => {
+    try {
+
+        const watched_movies = await UserWatchedMovie.findAll({
+            where: {
+                user_id: user_id
+            }
+        });
+
+        let movies = watched_movies.map(item => {
+            return item['dataValues']['movie_id'];
+        })
+
+        console.log(movies);
+
+        return movies;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+};
+
+
 module.exports = {
     createUser,
     getUserById,
@@ -345,5 +356,7 @@ module.exports = {
     createRating,
     getRating,
     putRating,
-    destroyRating
+    destroyRating,
+    putWatchedMovies,
+    getWatchedMovies
 };

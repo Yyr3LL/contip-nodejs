@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 // const cors = require('cors');
 
-const service = require('./services/service');
+const service = require('./contip/views');
 
 
 const app = express();
@@ -111,8 +111,11 @@ app.delete(
         const movie = await service.destroyMovie(id);
         res.send(movie);
     });
-
-
+/*
+*
+* RATING ENDPOINTS
+*
+* */
 app.post(
     '/api/v1/app/rating/create',
     async (req, res) => {
@@ -135,8 +138,8 @@ app.put(
     '/api/v1/app/rating/:id',
     async (req, res) => {
         const id = await req.params.id;
-        const body = await req.body;
-        const movie = await service.putRating({id, body});
+        const value = await req.body.value;
+        const movie = await service.putRating(id, value);
         res.send(movie);
     });
 
@@ -147,6 +150,24 @@ app.delete(
         const id = await req.params.id;
         const rating = await service.destroyRating(id);
         res.send(rating);
+    });
+
+
+app.put(
+    '/api/v1/app/watched',
+    async (req, res) => {
+        const {user_id, movies} = await req.body;
+        const watched_movie = await service.putWatchedMovies({user_id, movies});
+        res.send(watched_movie);
+    });
+
+
+app.get(
+    '/api/v1/app/watched',
+    async (req, res) => {
+        const user_id = await req.body.user_id;
+        const watched_movie = await service.getWatchedMovies(user_id);
+        res.send(watched_movie);
     });
 
 

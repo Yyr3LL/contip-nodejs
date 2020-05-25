@@ -111,12 +111,14 @@ const Movie_Genre = sequelize.define('Movie_Genre', {
 Movie.belongsToMany(Genre, {
     through: 'Movie_Genre',
     onDelete: 'CASCADE',
+    hooks: true,
     foreignKey: 'movie_id'
 });
 
 Genre.belongsToMany(Movie, {
     through: 'Movie_Genre',
     onDelete: 'CASCADE',
+    hooks: true,
     foreignKey: 'genre_id'
 });
 
@@ -167,7 +169,7 @@ const Rating = sequelize.define('Rating', {
 }, {timestamps: false});
 
 
-const UserPreferences = sequelize.define('UserPreferences', {
+const UserPreference = sequelize.define('UserPreferences', {
 
     id: {
         type: DataTypes.INTEGER,
@@ -204,7 +206,7 @@ const UserPreferences = sequelize.define('UserPreferences', {
 }, {timestamps: false});
 
 
-const UserWatchedList = sequelize.define('UserWatchedList', {
+const UserWatchedMovie = sequelize.define('UserWatchedList', {
 
     id: {
         type: DataTypes.INTEGER,
@@ -241,6 +243,21 @@ const UserWatchedList = sequelize.define('UserWatchedList', {
 }, {timestamps: false});
 
 
+User.belongsToMany(Movie, {
+    through: 'UserWatchedMovie',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'user_id'
+});
+
+Movie.belongsToMany(User, {
+    through: 'UserWatchedMovie',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'movie_id'
+});
+
+
 if (process.argv[2] === "sync") {
     (async () => {
         await sequelize.sync({force: true});
@@ -254,6 +271,6 @@ module.exports = {
     Movie,
     Movie_Genre,
     Rating,
-    UserPreferences,
-    UserWatchedList
+    UserPreference,
+    UserWatchedMovie
 }
