@@ -5,41 +5,31 @@ const sequelize = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
 
 const User = sequelize.define('User', {
 
-        id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true,
-            unique: true
-        },
-
-        username: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            unique: true
-        },
-
-        email: {
-            type: DataTypes.STRING,
-            defaultValue: "",
-            unique: true
-        },
-
-        password: {
-            type: DataTypes.STRING(64),
-            is: /^[0-9a-f]{64}$/i
-        }
-
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+        unique: true
     },
-    {
-        instanceMethods: {
-            toJSON: function () {
-                let values = Object.assign({}, this.get());
 
-                delete values.password;
-                return values;
-            }
-        }
-    });
+    username: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+
+    email: {
+        type: DataTypes.STRING,
+        defaultValue: "",
+        unique: true
+    },
+
+    password: {
+        type: DataTypes.STRING(64),
+        is: /^[0-9a-f]{64}$/i
+    }
+
+});
 
 
 const Genre = sequelize.define('Genre', {
@@ -53,10 +43,11 @@ const Genre = sequelize.define('Genre', {
 
     name: {
         type: DataTypes.STRING,
-        allowNull: false
-    },
+        allowNull: false,
+        unique: true
+    }
 
-});
+}, {timestamps: false});
 
 
 const Movie = sequelize.define('Movie', {
@@ -70,24 +61,29 @@ const Movie = sequelize.define('Movie', {
 
     title: {
         type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+
+    imdb: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+
+    tmdb: {
+        type: DataTypes.INTEGER,
         allowNull: false
     }
 
-});
+}, {timestamps: false});
 
 
 const Movie_Genre = sequelize.define('Movie_Genre', {
 
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-
-    user_id: {
+    movie_id: {
         type: DataTypes.INTEGER,
         references: {
-            model: User,
+            model: Movie,
             key: 'id',
         },
         validate: {
@@ -109,6 +105,21 @@ const Movie_Genre = sequelize.define('Movie_Genre', {
         }
     },
 
+}, {timestamps: false});
+
+
+Movie.belongsToMany(Genre, {
+    through: 'Movie_Genre',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'movie_id'
+});
+
+Genre.belongsToMany(Movie, {
+    through: 'Movie_Genre',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'genre_id'
 });
 
 
@@ -155,10 +166,10 @@ const Rating = sequelize.define('Rating', {
         }
     },
 
-});
+}, {timestamps: false});
 
 
-const UserPreferences = sequelize.define('UserPreferences', {
+const UserPreference = sequelize.define('UserPreferences', {
 
     id: {
         type: DataTypes.INTEGER,
@@ -192,10 +203,25 @@ const UserPreferences = sequelize.define('UserPreferences', {
         }
     },
 
+}, {timestamps: false});
+
+
+User.belongsToMany(Genre, {
+    through: 'UserPreference',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'user_id'
+});
+
+Genre.belongsToMany(User, {
+    through: 'UserPreference',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'genre_id'
 });
 
 
-const UserWatchedList = sequelize.define('UserWatchedList', {
+const UserWatchedMovie = sequelize.define('UserWatchedList', {
 
     id: {
         type: DataTypes.INTEGER,
@@ -229,13 +255,30 @@ const UserWatchedList = sequelize.define('UserWatchedList', {
         }
     },
 
+}, {timestamps: false});
+
+
+User.belongsToMany(Movie, {
+    through: 'UserWatchedMovie',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'user_id'
+});
+
+Movie.belongsToMany(User, {
+    through: 'UserWatchedMovie',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'movie_id'
 });
 
 
-// (async () => {
-//     await sequelize.sync({force: true});
-//
-// })();
+if (process.argv[2] === "sync") {
+    (async () => {
+        await sequelize.sync({force: true});
+
+    })();
+}
 
 module.exports = {
     User,
@@ -243,6 +286,6 @@ module.exports = {
     Movie,
     Movie_Genre,
     Rating,
-    UserPreferences,
-    UserWatchedList
+    UserPreference,
+    UserWatchedMovie
 }
