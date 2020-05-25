@@ -206,6 +206,21 @@ const UserPreference = sequelize.define('UserPreferences', {
 }, {timestamps: false});
 
 
+User.belongsToMany(Genre, {
+    through: 'UserPreference',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'user_id'
+});
+
+Genre.belongsToMany(User, {
+    through: 'UserPreference',
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'genre_id'
+});
+
+
 const UserWatchedMovie = sequelize.define('UserWatchedList', {
 
     id: {

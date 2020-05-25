@@ -7,7 +7,6 @@ const Rating = require('../models').Rating;
 const UserWatchedMovie = require('../models').UserWatchedMovie;
 const UserPreference = require('../models').UserPreference;
 
-const check_invalid_rating_values = require('./service').check_invalid_rating_values;
 const check_existing_data = require('./service').check_existing_data;
 const get_clear_movie = require('./service').get_clear_movie;
 
@@ -342,6 +341,81 @@ const getWatchedMovies = async (user_id) => {
 };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const putPreferences = async ({user_id, genres}) => {
+    try {
+
+        let list = [
+            await check_existing_data(User, user_id),
+        ]
+
+        for (let genre_id of genres) {
+            list.push(await check_existing_data(Genre, genre_id))
+        }
+
+        if (list.includes(false)) {
+            return {msg: "Incorrect data"};
+        }
+
+        await UserPreference.destroy({
+            where: {
+                user_id: user_id
+            }
+        });
+
+        for (let genre_id of genres) {
+            await UserPreference.create({user_id, genre_id});
+        }
+
+        return genres;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+};
+
+
+const getPreferences = async (user_id) => {
+    try {
+
+        const preferences = await UserPreference.findAll({
+            where: {
+                user_id: user_id
+            }
+        });
+
+        let genres = preferences.map(item => {
+            return item['dataValues']['genre_id'];
+        })
+
+        console.log(genres);
+
+        return genres;
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+};
+
 module.exports = {
     createUser,
     getUserById,
@@ -358,5 +432,7 @@ module.exports = {
     putRating,
     destroyRating,
     putWatchedMovies,
-    getWatchedMovies
+    getWatchedMovies,
+    putPreferences,
+    getPreferences,
 };

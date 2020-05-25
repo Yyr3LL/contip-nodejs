@@ -154,6 +154,24 @@ app.delete(
 
 
 app.put(
+    '/api/v1/app/preferences',
+    async (req, res) => {
+        const {user_id, movies} = await req.body;
+        const preferences = await service.putPreferences({user_id, movies});
+        res.send(preferences);
+    });
+
+
+app.get(
+    '/api/v1/app/preferences',
+    async (req, res) => {
+        const user_id = await req.body.user_id;
+        const preferences = await service.getPreferences(user_id);
+        res.send(preferences);
+    });
+
+
+app.put(
     '/api/v1/app/watched',
     async (req, res) => {
         const {user_id, movies} = await req.body;
