@@ -22,6 +22,14 @@ app.use((req, res, next) => {
 
 
 app.post(
+    '/login',
+    async (req, res) => {
+        const {username, password} = await req.body;
+        const logging = await service.logIn({username, password});
+        res.send(logging);
+    });
+
+app.post(
     '/me',
     async (req, res) => {
         const {id} = await req.body;
