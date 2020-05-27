@@ -1,4 +1,5 @@
 const {Sequelize, DataTypes} = require('sequelize');
+const bcrypt = require('bcrypt');
 
 const sequelize = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
 
@@ -27,6 +28,19 @@ const User = sequelize.define('User', {
     password: {
         type: DataTypes.STRING(64),
         is: /^[0-9a-f]{64}$/i
+    }
+
+}, {
+    hooks: {
+        beforeCreate: (user) => {
+            const salt = bcrypt.genSaltSync();
+            user.password = bcrypt.hashSync(user.password, salt);
+        }
+    },
+    instanceMethods: {
+        validPassword: (password, hash) => {
+            return bcrypt.compareSync(password, hash)
+        }
     }
 
 });

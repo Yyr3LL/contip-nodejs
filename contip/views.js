@@ -7,11 +7,31 @@ const Rating = require('../models').Rating;
 const UserWatchedMovie = require('../models').UserWatchedMovie;
 const UserPreference = require('../models').UserPreference;
 
+const bcrypt = require('bcrypt');
+
 const check_existing_data = require('./service').check_existing_data;
 const get_clear_movie = require('./service').get_clear_movie;
 
 
 const seq = new sequelize.Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
+
+
+const logIn = async ({username, password}) => {
+    try {
+
+        const user = await User.findOne({
+            where: {
+                username: username
+            }
+        });
+
+        return bcrypt.compare(password, user.password)
+
+    } catch (err) {
+        console.log(`Error: ${err.name}  ${err.stack}`);
+        return {msg: "Something went wrong"};
+    }
+};
 
 
 const createUser = async ({username, email, password, re_password}) => {
@@ -440,4 +460,5 @@ module.exports = {
     getWatchedMovies,
     putPreferences,
     getPreferences,
+    logIn
 };
