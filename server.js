@@ -1,3 +1,5 @@
+require('dotenv').config()
+const jwt = require('jsonwebtoken');
 const express = require('express');
 const bodyParser = require('body-parser');
 // const cors = require('cors');
@@ -8,7 +10,7 @@ const service = require('./contip/views');
 const app = express();
 
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -19,29 +21,47 @@ app.use((req, res, next) => {
         res.send();
     });
 });
+/*
+*
+*  PUTTING USER ID AND EXP DATE IN REQUEST
+*
+* */
+const auth = (req, res, next) => {
+
+    const header = req.headers['authorization'];
+    const token = header && header.split(' ')[1];
+    if (token === null) return res.sendStatus(401);
+
+    jwt.verify(token, process.env.ACCESS, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+
+};
 
 
 app.post(
     '/login',
     async (req, res) => {
-        const {username, password} = await req.body;
-        const logging = await service.logIn({username, password});
+        const { username, password } = await req.body;
+        const logging = await service.logIn({ username, password });
         res.send(logging);
     });
 
-app.post(
+app.get(
     '/me',
+    auth,
     async (req, res) => {
-        const {id} = await req.body;
-        const user = await service.getUserById({id});
+        const user = await service.getUserInfo(req.user);
         res.send(user);
     });
 
 app.post(
     '/signup',
     async (req, res) => {
-        const {username, email, password, re_password} = await req.body;
-        const user = await service.createUser({username, email, password, re_password});
+        const { username, email, password, re_password } = await req.body;
+        const user = await service.createUser({ username, email, password, re_password });
         res.send(user);
     });
 /*
@@ -52,8 +72,8 @@ app.post(
 app.post(
     '/api/v1/app/genre/create',
     async (req, res) => {
-        const {name} = await req.body;
-        const genre = await service.createGenre({name});
+        const { name } = await req.body;
+        const genre = await service.createGenre({ name });
         res.send(genre);
     });
 
@@ -79,8 +99,8 @@ app.get(
 app.post(
     '/api/v1/app/movie/create',
     async (req, res) => {
-        const {title, imdb, tmdb, genres} = await req.body;
-        const movie = await service.createMovie({title, imdb, tmdb, genres});
+        const { title, imdb, tmdb, genres } = await req.body;
+        const movie = await service.createMovie({ title, imdb, tmdb, genres });
         res.send(movie);
     });
 
@@ -107,7 +127,7 @@ app.put(
     async (req, res) => {
         const id = await req.params.id;
         const body = await req.body;
-        const movie = await service.putMovie({id, body});
+        const movie = await service.putMovie({ id, body });
         res.send(movie);
     });
 
@@ -127,8 +147,8 @@ app.delete(
 app.post(
     '/api/v1/app/rating/create',
     async (req, res) => {
-        const {value, user_id, movie_id} = await req.body;
-        const rating = await service.createRating({value, user_id, movie_id});
+        const { value, user_id, movie_id } = await req.body;
+        const rating = await service.createRating({ value, user_id, movie_id });
         res.send(rating);
     });
 
@@ -164,8 +184,8 @@ app.delete(
 app.put(
     '/api/v1/app/preferences',
     async (req, res) => {
-        const {user_id, movies} = await req.body;
-        const preferences = await service.putPreferences({user_id, movies});
+        const { user_id, movies } = await req.body;
+        const preferences = await service.putPreferences({ user_id, movies });
         res.send(preferences);
     });
 
@@ -182,8 +202,8 @@ app.get(
 app.put(
     '/api/v1/app/watched',
     async (req, res) => {
-        const {user_id, movies} = await req.body;
-        const watched_movie = await service.putWatchedMovies({user_id, movies});
+        const { user_id, movies } = await req.body;
+        const watched_movie = await service.putWatchedMovies({ user_id, movies });
         res.send(watched_movie);
     });
 
@@ -197,7 +217,7 @@ app.get(
     });
 
 
-app.listen(8000, ()=> {
+app.listen(8000, () => {
     console.log('Listening to 8000...')
 })
 
