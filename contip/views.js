@@ -18,6 +18,7 @@ const get_clear_movie = require('./service').get_clear_movie;
 
 const seq = new sequelize.Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
 
+let refreshTokens = [];
 
 const logIn = async ({ username, password }) => {
     try {
@@ -31,16 +32,15 @@ const logIn = async ({ username, password }) => {
         if (user === null) return { msg: "User not found" };
         if (!bcrypt.compare(password, user.password)) return { msg: "Wrong password" };
 
-        const today = new Date();
-        const exp = new Date(today);
-        exp.setMinutes(today.getMinutes() + 5);
-
         user = {
             id: user.id,
-            exp: +exp
         };
 
-        return jwt.sign(user, process.env.ACCESS);
+        const accessToken = jwt.sign(user, process.env.ACCESS, { expiresIn: '15s' })
+        const refreshToken = jwt.sign(user, process.env.REFRESH)
+        refreshTokens.push(refreshToken);
+
+        return {access: accessToken, refresh: refreshToken}
 
 
     } catch (err) {
@@ -48,6 +48,8 @@ const logIn = async ({ username, password }) => {
         return { msg: "Something went wrong" };
     }
 };
+
+
 
 
 const createUser = async ({ username, email, password, re_password }) => {
@@ -66,7 +68,7 @@ const createUser = async ({ username, email, password, re_password }) => {
 
 
 const getUserInfo = async (token) => {
-    let user = await seq.query(`SELECT \"id\", \"username\", \"email\", \"createdAt\", \"updatedAt\" FROM \"Users\" AS \"User\" WHERE \"User\".\"id\" = ${id};\n`)
+    let user = await seq.query(`SELECT \"id\", \"username\", \"email\", \"createdAt\", \"updatedAt\" FROM \"Users\" AS \"User\" WHERE \"User\".\"id\" = ${token.id};\n`)
     if (user === null) return { msg: "User not found" };
     return user[0][0];
 };

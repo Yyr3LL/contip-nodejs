@@ -21,6 +21,11 @@ app.use((req, res, next) => {
         res.send();
     });
 });
+
+
+let refreshTokens = [];
+
+
 /*
 *
 *  PUTTING USER ID AND EXP DATE IN REQUEST
@@ -46,6 +51,7 @@ app.post(
     async (req, res) => {
         const { username, password } = await req.body;
         const logging = await service.logIn({ username, password });
+        refreshTokens.push(logging.refresh);
         res.send(logging);
     });
 
@@ -64,6 +70,24 @@ app.post(
         const user = await service.createUser({ username, email, password, re_password });
         res.send(user);
     });
+
+
+app.post(
+    '/refresh',
+    async (req, res) => {
+        const refreshToken = req.body.token;
+
+        if (refreshToken === null) return res.sendStatus(401);
+        if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
+
+        jwt.verify(refreshToken, process.env.REFRESH, (err, user) => {
+            if (err) return res.sendStatus(403);
+
+            const accessToken = jwt.sign({id: user.id}, process.env.ACCESS, { expiresIn: '15s' })
+            res.send({access: accessToken});
+        })
+    }
+)
 /*
 *
 * GENRE ENDPOINTS
