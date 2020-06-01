@@ -1,11 +1,17 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const express = require('express');
+const redis = require('redis');
 const bodyParser = require('body-parser');
 // const cors = require('cors');
 
 const service = require('./contip/views');
 
+const redis_client = redis.createClient();
+
+redis_client.on("error", (err) => {
+    console.log(err);
+});
 
 const app = express();
 
@@ -21,11 +27,6 @@ app.use((req, res, next) => {
         res.send();
     });
 });
-
-
-let refreshTokens = [];
-
-
 /*
 *
 *  PUTTING USER ID AND EXP DATE IN REQUEST
@@ -50,10 +51,17 @@ app.post(
     '/login',
     async (req, res) => {
         const { username, password } = await req.body;
-        const logging = await service.logIn({ username, password });
-        refreshTokens.push(logging.refresh);
-        res.send(logging);
+        const data = await service.logIn({ username, password });
+
+        const response = {
+            access: data.access, 
+            refresh: data.refresh
+        }
+
+        redis_client.set(data.user_id, data.refresh, redis.print);
+        res.send(response);
     });
+
 
 app.get(
     '/me',
@@ -62,6 +70,7 @@ app.get(
         const user = await service.getUserInfo(req.user);
         res.send(user);
     });
+
 
 app.post(
     '/signup',
@@ -78,16 +87,45 @@ app.post(
         const refreshToken = req.body.token;
 
         if (refreshToken === null) return res.sendStatus(401);
-        if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
+
+        let user_id;
 
         jwt.verify(refreshToken, process.env.REFRESH, (err, user) => {
             if (err) return res.sendStatus(403);
+            user_id = user.id;
+        })
 
-            const accessToken = jwt.sign({id: user.id}, process.env.ACCESS, { expiresIn: '15s' })
+        redis_client.get(user_id, (error, reply) => {
+
+            if (error) return res.sendStatus(500);
+            if (reply === null) return res.sendStatus(403);
+
+            const accessToken = jwt.sign({ id: user_id }, process.env.ACCESS, { expiresIn: '60s' });
             res.send({access: accessToken});
         })
-    }
-)
+    });
+
+
+app.delete(
+    '/logout',
+    async (req, res) => {
+        let user_id;
+        const refreshToken = req.body.token;
+
+        if (refreshToken === null) return res.sendStatus(401);
+
+        jwt.verify(refreshToken, process.env.REFRESH, (err, user) => {
+            if (err) return res.sendStatus(500);
+            user_id = user.id;
+        })
+
+        redis_client.del(user_id, (err, reply) => {
+            if (err) return res.sendStatus(500);
+            console.log(reply);
+            return res.sendStatus(204);
+        });
+
+    });
 /*
 *
 * GENRE ENDPOINTS
@@ -101,12 +139,14 @@ app.post(
         res.send(genre);
     });
 
+
 app.get(
     '/api/v1/app/genre',
     async (req, res) => {
         const genres = await service.listGenre();
         res.send(genres);
     });
+
 
 app.get(
     '/api/v1/app/genre/:id',
@@ -203,8 +243,11 @@ app.delete(
         const rating = await service.destroyRating(id);
         res.send(rating);
     });
-
-
+/*
+*
+* USER PROFILE ENDPOINTS
+*
+* */
 app.put(
     '/api/v1/app/preferences',
     async (req, res) => {

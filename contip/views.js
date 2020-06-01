@@ -18,7 +18,6 @@ const get_clear_movie = require('./service').get_clear_movie;
 
 const seq = new sequelize.Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
 
-let refreshTokens = [];
 
 const logIn = async ({ username, password }) => {
     try {
@@ -36,11 +35,10 @@ const logIn = async ({ username, password }) => {
             id: user.id,
         };
 
-        const accessToken = jwt.sign(user, process.env.ACCESS, { expiresIn: '15s' })
+        const accessToken = jwt.sign(user, process.env.ACCESS, { expiresIn: '60s' })
         const refreshToken = jwt.sign(user, process.env.REFRESH)
-        refreshTokens.push(refreshToken);
 
-        return {access: accessToken, refresh: refreshToken}
+        return {user_id: user.id, access: accessToken, refresh: refreshToken}
 
 
     } catch (err) {
@@ -48,8 +46,6 @@ const logIn = async ({ username, password }) => {
         return { msg: "Something went wrong" };
     }
 };
-
-
 
 
 const createUser = async ({ username, email, password, re_password }) => {
@@ -397,6 +393,7 @@ const getWatchedMovies = async (user_id) => {
         return { msg: "Something went wrong" };
     }
 };
+
 
 const putPreferences = async ({ user_id, genres }) => {
     try {
