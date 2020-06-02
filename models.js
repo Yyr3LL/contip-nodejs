@@ -46,6 +46,43 @@ const User = sequelize.define('User', {
 });
 
 
+const JsonWebToken = sequelize.define('JsonWebToken', {
+
+    user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: User,
+            key: 'id',
+        },
+        validate: {
+            isInt: true,
+            min: 0
+        }
+    },
+
+    access_token: {
+        type: DataTypes.STRING(64),
+        allowNull: false,
+        unique: true
+    },
+
+    refresh_token: {
+        type: DataTypes.STRING(64),
+        allowNull: false,
+        unique: true
+    }
+
+})
+
+
+JsonWebToken.belongsTo(User, {
+    onDelete: 'CASCADE',
+    hooks: true,
+    foreignKey: 'user_id'
+});
+
+
 const Genre = sequelize.define('Genre', {
 
     id: {
@@ -123,11 +160,12 @@ const Movie_Genre = sequelize.define('Movie_Genre', {
 
 
 Movie.belongsToMany(Genre, {
-    through: 'Movie_Genre',
-    onDelete: 'CASCADE',
-    hooks: true,
+    through: 'Movie_Genre', 
+    onDelete: 'CASCADE', 
+    hooks: true, 
     foreignKey: 'movie_id'
 });
+   
 
 Genre.belongsToMany(Movie, {
     through: 'Movie_Genre',

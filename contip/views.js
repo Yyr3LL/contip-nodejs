@@ -1,4 +1,9 @@
+require('dotenv').config();
+
 const sequelize = require('sequelize');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+
 const User = require('../models').User;
 const Genre = require('../models').Genre;
 const Movie = require('../models').Movie;
@@ -7,8 +12,6 @@ const Rating = require('../models').Rating;
 const UserWatchedMovie = require('../models').UserWatchedMovie;
 const UserPreference = require('../models').UserPreference;
 
-const bcrypt = require('bcrypt');
-
 const check_existing_data = require('./service').check_existing_data;
 const get_clear_movie = require('./service').get_clear_movie;
 
@@ -16,57 +19,65 @@ const get_clear_movie = require('./service').get_clear_movie;
 const seq = new sequelize.Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
 
 
-const logIn = async ({username, password}) => {
+const logIn = async ({ username, password }) => {
     try {
 
-        const user = await User.findOne({
+        let user = await User.findOne({
             where: {
                 username: username
             }
         });
 
-        return bcrypt.compare(password, user.password)
+        if (user === null) return { msg: "User not found" };
+        if (!bcrypt.compare(password, user.password)) return { msg: "Wrong password" };
+
+        user = {
+            id: user.id,
+        };
+
+        const accessToken = jwt.sign(user, process.env.ACCESS, { expiresIn: '2h' })
+        const refreshToken = jwt.sign(user, process.env.REFRESH)
+
+        return {user_id: user.id, access: accessToken, refresh: refreshToken}
+
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
 
-const createUser = async ({username, email, password, re_password}) => {
+const createUser = async ({ username, email, password, re_password }) => {
     try {
 
         if (password !== re_password) {
-            return {msg: "re_password does not match"};
+            return { msg: "re_password does not match" };
         }
-        return await User.create({username, email, password, re_password});
+        return await User.create({ username, email, password, re_password });
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
 
-const getUserById = async ({id}) => {
-    let user = await seq.query(`SELECT \"id\", \"username\", \"email\", \"createdAt\", \"updatedAt\" FROM \"Users\" AS \"User\" WHERE \"User\".\"id\" = ${id};\n`)
-    if (user === null) {
-        return {msg: "User not found"};
-    }
-    delete user.password;
+const getUserInfo = async (token) => {
+    let user = await seq.query(`SELECT \"id\", \"username\", \"email\", \"createdAt\", \"updatedAt\" FROM \"Users\" AS \"User\" WHERE \"User\".\"id\" = ${token.id};\n`)
+    if (user === null) return { msg: "User not found" };
     return user[0][0];
 };
 
 
-const createGenre = async ({name}) => {
+const createGenre = async ({ name }) => {
     try {
 
-        return await Genre.create({name});
+        return await Genre.create({ name });
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
@@ -78,7 +89,7 @@ const listGenre = async () => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
@@ -88,30 +99,30 @@ const getGenre = async (id) => {
 
         const genre = await Genre.findByPk(id);
         if (genre === null) {
-            return {msg: "Genre with id of " + id + " not found"};
+            return { msg: "Genre with id of " + id + " not found" };
         }
         return genre;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
 
-const createMovie = async ({title, imdb, tmdb, genres}) => {
+const createMovie = async ({ title, imdb, tmdb, genres }) => {
     try {
 
-        const movie = await Movie.create({title, imdb, tmdb});
+        const movie = await Movie.create({ title, imdb, tmdb });
         const cur_movie_id = movie.id;
         genres.forEach(genre_id => {
-            Movie_Genre.create({movie_id: cur_movie_id, genre_id: genre_id});
+            Movie_Genre.create({ movie_id: cur_movie_id, genre_id: genre_id });
         });
         return movie;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 }
 
@@ -131,7 +142,7 @@ const listMovie = async () => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: 'Something went wrong'};
+        return { msg: 'Something went wrong' };
     }
 }
 
@@ -147,19 +158,19 @@ const getMovie = async (id) => {
         });
 
         if (movie === null) {
-            return {msg: 'Movie not found'};
+            return { msg: 'Movie not found' };
         }
 
         return await get_clear_movie(movie);
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 }
 
 
-const putMovie = async ({id, body}) => {
+const putMovie = async ({ id, body }) => {
     try {
 
         let movie = await Movie.findOne({
@@ -170,7 +181,7 @@ const putMovie = async ({id, body}) => {
         });
 
         if (movie === null) {
-            return {msg: "Movie not found"};
+            return { msg: "Movie not found" };
         }
 
         movie = await get_clear_movie(movie);
@@ -180,14 +191,14 @@ const putMovie = async ({id, body}) => {
         if (fields.map(field => {
             return body.hasOwnProperty(field);
         }).includes(false)) {
-            return {msg: "Please provide all the values"};
+            return { msg: "Please provide all the values" };
         }
 
         for (let field of fields) {
             movie[field] = body[field];
         }
 
-        await Movie_Genre.destroy({where: {movie_id: id}});
+        await Movie_Genre.destroy({ where: { movie_id: id } });
 
         let checking_data = [];
 
@@ -196,20 +207,20 @@ const putMovie = async ({id, body}) => {
         }
 
         if (checking_data.includes(false)) {
-            return {msg: "Incorrect data"};
+            return { msg: "Incorrect data" };
         }
 
         for (let genre_id of body.genres) {
-            await Movie_Genre.create({movie_id: id, genre_id: genre_id});
+            await Movie_Genre.create({ movie_id: id, genre_id: genre_id });
         }
 
-        await Movie.update(body, {where: {id: id}});
+        await Movie.update(body, { where: { id: id } });
 
         return movie;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 }
 
@@ -220,22 +231,22 @@ const destroyMovie = async (id) => {
         let movie = await Movie.findByPk(id);
 
         if (movie === null) {
-            return {msg: "Movie not found"};
+            return { msg: "Movie not found" };
         }
 
         // await Movie_Genre.destroy({where: {movie_id: movie.id}});
-        await Movie.destroy({where: {id: movie.id}});
+        await Movie.destroy({ where: { id: movie.id } });
 
-        return {msg: `Movie with id: ${movie.id} has been successfully deleted`};
+        return { msg: `Movie with id: ${movie.id} has been successfully deleted` };
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 }
 
 
-const createRating = async ({value, movie_id, user_id}) => {
+const createRating = async ({ value, movie_id, user_id }) => {
     try {
 
         let list = [
@@ -244,14 +255,16 @@ const createRating = async ({value, movie_id, user_id}) => {
         ]
 
         if (list.includes(false)) {
-            return {msg: "Incorrect data"};
+            return { msg: "Incorrect data" };
         }
 
-        return await Rating.create({value, user_id, movie_id});
+        value = parseInt(value, 10);
+
+        return await Rating.create({ value, user_id, movie_id });
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
@@ -266,19 +279,19 @@ const getRating = async (id) => {
         });
 
         if (rating === null) {
-            return {msg: "Rating not found"};
+            return { msg: "Rating not found" };
         }
 
         return rating;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
 
-const putRating = async (id, value) => {
+const putRating = async (id, value, user_id) => {
     try {
 
         let rating = await Rating.findOne({
@@ -288,45 +301,49 @@ const putRating = async (id, value) => {
         });
 
         if (rating === null) {
-            return {msg: "Rating not found"};
+            return { msg: "Rating not found" };
         }
+
+        if (rating.user_id !== user_id) return {msg: "You have no rights to remove that rating obj"};
 
         value = parseInt(value, 10);
 
-        await Rating.update({value: value}, {where: {id: id}});
+        await Rating.update({ value: value }, { where: { id: id } });
 
         rating.value = value;
         return rating;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 
 };
 
 
-const destroyRating = async (id) => {
+const destroyRating = async (id, user_id) => {
     try {
 
         let rating = await Rating.findByPk(id);
 
         if (rating === null) {
-            return {msg: "Movie not found"};
+            return { msg: "Rating not found" };
         }
 
-        await Rating.destroy({where: {id: rating.id}});
+        if (rating.user_id !== user_id) return {msg: "You have no rights to remove that rating obj"};
 
-        return {msg: `Rating with id: ${rating.id} has been successfully deleted`};
+        await Rating.destroy({ where: { id: rating.id } });
+
+        return { msg: `Rating with id: ${rating.id} has been successfully deleted` };
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 }
 
 
-const putWatchedMovies = async ({user_id, movies}) => {
+const putWatchedMovies = async ({ user_id, movies }) => {
     try {
 
         let list = [
@@ -338,7 +355,7 @@ const putWatchedMovies = async ({user_id, movies}) => {
         }
 
         if (list.includes(false)) {
-            return {msg: "Incorrect data"};
+            return { msg: "Incorrect data" };
         }
 
         await UserWatchedMovie.destroy({
@@ -348,14 +365,14 @@ const putWatchedMovies = async ({user_id, movies}) => {
         });
 
         for (let movie_id of movies) {
-            await UserWatchedMovie.create({user_id, movie_id});
+            await UserWatchedMovie.create({ user_id, movie_id });
         }
 
         return movies;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
@@ -379,11 +396,12 @@ const getWatchedMovies = async (user_id) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
-const putPreferences = async ({user_id, genres}) => {
+
+const putPreferences = async ({ user_id, genres }) => {
     try {
 
         let list = [
@@ -395,7 +413,7 @@ const putPreferences = async ({user_id, genres}) => {
         }
 
         if (list.includes(false)) {
-            return {msg: "Incorrect data"};
+            return { msg: "Incorrect data" };
         }
 
         await UserPreference.destroy({
@@ -405,14 +423,14 @@ const putPreferences = async ({user_id, genres}) => {
         });
 
         for (let genre_id of genres) {
-            await UserPreference.create({user_id, genre_id});
+            await UserPreference.create({ user_id, genre_id });
         }
 
         return genres;
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
@@ -436,14 +454,14 @@ const getPreferences = async (user_id) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return { msg: "Something went wrong" };
     }
 };
 
 
 module.exports = {
     createUser,
-    getUserById,
+    getUserInfo,
     createGenre,
     listGenre,
     getGenre,
