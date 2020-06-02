@@ -35,7 +35,7 @@ const logIn = async ({ username, password }) => {
             id: user.id,
         };
 
-        const accessToken = jwt.sign(user, process.env.ACCESS, { expiresIn: '60s' })
+        const accessToken = jwt.sign(user, process.env.ACCESS, { expiresIn: '2h' })
         const refreshToken = jwt.sign(user, process.env.REFRESH)
 
         return {user_id: user.id, access: accessToken, refresh: refreshToken}
@@ -258,6 +258,8 @@ const createRating = async ({ value, movie_id, user_id }) => {
             return { msg: "Incorrect data" };
         }
 
+        value = parseInt(value, 10);
+
         return await Rating.create({ value, user_id, movie_id });
 
     } catch (err) {
@@ -289,7 +291,7 @@ const getRating = async (id) => {
 };
 
 
-const putRating = async (id, value) => {
+const putRating = async (id, value, user_id) => {
     try {
 
         let rating = await Rating.findOne({
@@ -301,6 +303,8 @@ const putRating = async (id, value) => {
         if (rating === null) {
             return { msg: "Rating not found" };
         }
+
+        if (rating.user_id !== user_id) return {msg: "You have no rights to remove that rating obj"};
 
         value = parseInt(value, 10);
 
@@ -317,14 +321,16 @@ const putRating = async (id, value) => {
 };
 
 
-const destroyRating = async (id) => {
+const destroyRating = async (id, user_id) => {
     try {
 
         let rating = await Rating.findByPk(id);
 
         if (rating === null) {
-            return { msg: "Movie not found" };
+            return { msg: "Rating not found" };
         }
+
+        if (rating.user_id !== user_id) return {msg: "You have no rights to remove that rating obj"};
 
         await Rating.destroy({ where: { id: rating.id } });
 

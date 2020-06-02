@@ -32,11 +32,11 @@ app.use((req, res, next) => {
 *  PUTTING USER ID AND EXP DATE IN REQUEST
 *
 * */
-const auth = (req, res, next) => {
+const JWTAuth = (req, res, next) => {
 
     const header = req.headers['authorization'];
     const token = header && header.split(' ')[1];
-    if (token === null) return res.sendStatus(401);
+    if (token == null) return res.sendStatus(401);
 
     jwt.verify(token, process.env.ACCESS, (err, user) => {
         if (err) return res.sendStatus(403);
@@ -65,7 +65,7 @@ app.post(
 
 app.get(
     '/me',
-    auth,
+    JWTAuth,
     async (req, res) => {
         const user = await service.getUserInfo(req.user);
         res.send(user);
@@ -100,7 +100,7 @@ app.post(
             if (error) return res.sendStatus(500);
             if (reply === null) return res.sendStatus(403);
 
-            const accessToken = jwt.sign({ id: user_id }, process.env.ACCESS, { expiresIn: '60s' });
+            const accessToken = jwt.sign({ id: user_id }, process.env.ACCESS, { expiresIn: '2h' });
             res.send({access: accessToken});
         })
     });
@@ -133,6 +133,7 @@ app.delete(
 * */
 app.post(
     '/api/v1/app/genre/create',
+    JWTAuth,
     async (req, res) => {
         const { name } = await req.body;
         const genre = await service.createGenre({ name });
@@ -142,6 +143,7 @@ app.post(
 
 app.get(
     '/api/v1/app/genre',
+    JWTAuth,
     async (req, res) => {
         const genres = await service.listGenre();
         res.send(genres);
@@ -150,6 +152,7 @@ app.get(
 
 app.get(
     '/api/v1/app/genre/:id',
+    JWTAuth,
     async (req, res) => {
         const id = await req.params.id;
         const genre = await service.getGenre(id);
@@ -162,6 +165,7 @@ app.get(
 * */
 app.post(
     '/api/v1/app/movie/create',
+    JWTAuth,
     async (req, res) => {
         const { title, imdb, tmdb, genres } = await req.body;
         const movie = await service.createMovie({ title, imdb, tmdb, genres });
@@ -171,6 +175,7 @@ app.post(
 
 app.get(
     '/api/v1/app/movie',
+    JWTAuth,
     async (req, res) => {
         const movies = await service.listMovie();
         res.send(movies);
@@ -179,6 +184,7 @@ app.get(
 
 app.get(
     '/api/v1/app/movie/:id',
+    JWTAuth,
     async (req, res) => {
         const id = await req.params.id;
         const movie = await service.getMovie(id);
@@ -188,6 +194,7 @@ app.get(
 
 app.put(
     '/api/v1/app/movie/:id',
+    JWTAuth,
     async (req, res) => {
         const id = await req.params.id;
         const body = await req.body;
@@ -198,6 +205,7 @@ app.put(
 
 app.delete(
     '/api/v1/app/movie/:id',
+    JWTAuth,
     async (req, res) => {
         const id = await req.params.id;
         const movie = await service.destroyMovie(id);
@@ -210,8 +218,10 @@ app.delete(
 * */
 app.post(
     '/api/v1/app/rating/create',
+    JWTAuth,
     async (req, res) => {
-        const { value, user_id, movie_id } = await req.body;
+        const { value, movie_id } = await req.body;
+        const user_id = await req.user.id;
         const rating = await service.createRating({ value, user_id, movie_id });
         res.send(rating);
     });
@@ -219,6 +229,7 @@ app.post(
 
 app.get(
     '/api/v1/app/rating/:id',
+    JWTAuth,
     async (req, res) => {
         const id = await req.params.id;
         const movie = await service.getRating(id);
@@ -228,19 +239,23 @@ app.get(
 
 app.put(
     '/api/v1/app/rating/:id',
+    JWTAuth,
     async (req, res) => {
         const id = await req.params.id;
         const value = await req.body.value;
-        const movie = await service.putRating(id, value);
+        const user_id = await req.user.id;
+        const movie = await service.putRating(id, value, user_id);
         res.send(movie);
     });
 
 
 app.delete(
     '/api/v1/app/rating/:id',
+    JWTAuth,
     async (req, res) => {
         const id = await req.params.id;
-        const rating = await service.destroyRating(id);
+        const user_id = await req.user.id;
+        const rating = await service.destroyRating(id, user_id);
         res.send(rating);
     });
 /*
@@ -250,8 +265,10 @@ app.delete(
 * */
 app.put(
     '/api/v1/app/preferences',
+    JWTAuth,
     async (req, res) => {
-        const { user_id, movies } = await req.body;
+        const movies = await req.body.movies;
+        const user_id = await req.user.id;
         const preferences = await service.putPreferences({ user_id, movies });
         res.send(preferences);
     });
@@ -259,8 +276,9 @@ app.put(
 
 app.get(
     '/api/v1/app/preferences',
+    JWTAuth,
     async (req, res) => {
-        const user_id = await req.body.user_id;
+        const user_id = await req.user.id;
         const preferences = await service.getPreferences(user_id);
         res.send(preferences);
     });
@@ -268,8 +286,10 @@ app.get(
 
 app.put(
     '/api/v1/app/watched',
+    JWTAuth,
     async (req, res) => {
-        const { user_id, movies } = await req.body;
+        const movies = await req.body.movies;
+        const user_id = await req.user.id;
         const watched_movie = await service.putWatchedMovies({ user_id, movies });
         res.send(watched_movie);
     });
@@ -277,8 +297,9 @@ app.put(
 
 app.get(
     '/api/v1/app/watched',
+    JWTAuth,
     async (req, res) => {
-        const user_id = await req.body.user_id;
+        const user_id = await req.user.id;
         const watched_movie = await service.getWatchedMovies(user_id);
         res.send(watched_movie);
     });
