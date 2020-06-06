@@ -28,3 +28,4 @@ app.listen(8000, () => {
     console.log('Listening to 8000...')
 })
 
+module.exports = app;

@@ -1,5 +1,6 @@
 const User = require('../models').User;
 const Movie = require('../models').Movie;
+const Rating = require('../models').Rating;
 
 const check_existing_data = require('../service').check_existing_data;
 

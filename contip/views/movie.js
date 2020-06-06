@@ -10,12 +10,20 @@ const createMovie = async (req, res) => {
     const { title, imdb, tmdb, genres } = await req.body;
     try {
 
-        const movie = await Movie.create({ title, imdb, tmdb });
+        let movie = await Movie.create({ title, imdb, tmdb });
         const cur_movie_id = movie.id;
         genres.forEach(genre_id => {
             Movie_Genre.create({ movie_id: cur_movie_id, genre_id: genre_id });
         });
-        res.send(movie);
+        movie = await Movie.findOne({
+            where: {
+                id: movie.id
+            },
+            include: Genre
+        })
+
+        console.log(movie);
+        res.send(await get_clear_movie(movie));
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
@@ -25,7 +33,6 @@ const createMovie = async (req, res) => {
 
 
 const listMovie = async (req, res) => {
-    const id = await req.params.id;
     try {
 
         let movies = await Movie.findAll({

@@ -4,19 +4,16 @@ const express = require('express');
 const redis = require('redis');
 const router = express.Router();
 const views = require('require-all')(__dirname + '/views');
-/*
-*
-*  PUTTING USER ID AND EXP DATE IN REQUEST
-*
-* */
 
-console.log(views);
 
 const redis_client = redis.createClient();
 
 redis_client.on("error", (err) => {
     console.log(err);
 });
+
+
+// PUTTING USER ID AND EXP DATE IN REQUEST
 
 const JWTAuth = (req, res, next) => {
 
@@ -46,10 +43,10 @@ router.get(
 );
 
 
-// router.post(
-//     '/signup',
-//     views.auth.createUser
-//     );
+router.post(
+    '/signup',
+    views.auth.createUser
+    );
 
 
 router.post(

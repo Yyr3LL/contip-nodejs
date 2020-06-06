@@ -1,6 +1,3 @@
-const sequelize = require('sequelize');
-
-
 const check_existing_data = async(model, instance_id) => {
 
     console.log(model);

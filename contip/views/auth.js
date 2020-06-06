@@ -122,5 +122,6 @@ module.exports = {
     logIn,
     logOut,
     getUserInfo,
-    refreshToken
+    refreshToken,
+    createUser
 }
