@@ -287,15 +287,17 @@ Movie.belongsToMany(User, {
     foreignKey: 'movie_id'
 });
 
-const models = [
-    User,
-    UserWatchedMovie,
-    UserPreference,
-    Genre,
-    Movie,
-    Movie_Genre,
-    Rating
-]
+
+// const models = [
+//     User,
+//     UserWatchedMovie,
+//     UserPreference,
+//     Genre,
+//     Movie,
+//     Movie_Genre,
+//     Rating
+// ]
+
 
 const sync_db = async () => {
     await sequelize.sync({force: true});
@@ -307,6 +309,11 @@ const sync_db = async () => {
     //         }
     //     );
     // }
+}
+
+
+const sync_model = async (model) => {
+    await model.sync({force: true});
 }
 
 
@@ -324,5 +331,6 @@ module.exports = {
     UserPreference,
     UserWatchedMovie,
     sequelize,
-    sync_db
+    sync_db,
+    sync_model
 }

@@ -7,14 +7,39 @@ const get_clear_movie = require('../service').get_clear_movie;
 
 
 const createMovie = async (req, res) => {
-    const { title, imdb, tmdb, genres } = await req.body;
+    const {title, imdb, tmdb, genres} = await req.body;
     try {
 
-        let movie = await Movie.create({ title, imdb, tmdb });
+        let checking_data = [];
+
+        for (let genre_id of genres) {
+            checking_data.push(await check_existing_data(Genre, genre_id));
+        }
+
+        if (checking_data.includes(false)) {
+            res.status(400).send({msg: 'Given genres don\'t exist'});
+        }
+
+        let movie;
+
+        try {
+
+            movie = await Movie.create({title, imdb, tmdb});
+
+        } catch (err) {
+            if (err.name === "SequelizeUniqueConstraintError") {
+                res.status(400).send({msg: 'A movie with given name already exists'});
+            }
+            else {
+                throw err;
+            }
+        }
         const cur_movie_id = movie.id;
-        genres.forEach(genre_id => {
-            Movie_Genre.create({ movie_id: cur_movie_id, genre_id: genre_id });
-        });
+
+        for (let genre of genres) {
+            await Movie_Genre.create({movie_id: cur_movie_id, genre_id: genre});
+        }
+
         movie = await Movie.findOne({
             where: {
                 id: movie.id
@@ -22,12 +47,13 @@ const createMovie = async (req, res) => {
             include: Genre
         })
 
-        console.log(movie);
         res.send(await get_clear_movie(movie));
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        console.log("#########################################33")
+        console.log(`${err.name}`);
+        return {msg: "Something went wrong"};
     }
 }
 
@@ -47,7 +73,7 @@ const listMovie = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: 'Something went wrong' };
+        return {msg: 'Something went wrong'};
     }
 };
 
@@ -64,14 +90,15 @@ const getMovie = async (req, res) => {
         });
 
         if (movie === null) {
-            return { msg: 'Movie not found' };
+            res.sendStatus(404);
+            // res.send({ msg: 'Movie not found' });
         }
 
         res.send(await get_clear_movie(movie));
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return {msg: "Something went wrong"};
     }
 };
 
@@ -89,7 +116,7 @@ const putMovie = async (req, res) => {
         });
 
         if (movie === null) {
-            return { msg: "Movie not found" };
+            return {msg: "Movie not found"};
         }
 
         movie = await get_clear_movie(movie);
@@ -99,36 +126,35 @@ const putMovie = async (req, res) => {
         if (fields.map(field => {
             return body.hasOwnProperty(field);
         }).includes(false)) {
-            return { msg: "Please provide all the values" };
+            return {msg: "Please provide all the values"};
         }
-
-        for (let field of fields) {
-            movie[field] = body[field];
-        }
-
-        await Movie_Genre.destroy({ where: { movie_id: id } });
 
         let checking_data = [];
 
         for (let genre_id of body.genres) {
-            checking_data.push(await check_existing_data(Genre, genre_id));
+            for (let field of fields) {
+                checking_data.push(await check_existing_data(Genre, genre_id));
+                movie['dataValues'][field] = body[field];
+            }
         }
 
         if (checking_data.includes(false)) {
-            return { msg: "Incorrect data" };
+            return {msg: "Incorrect data"};
         }
+
+        await Movie_Genre.destroy({where: {movie_id: id}});
 
         for (let genre_id of body.genres) {
-            await Movie_Genre.create({ movie_id: id, genre_id: genre_id });
+            await Movie_Genre.create({movie_id: id, genre_id: genre_id});
         }
 
-        await Movie.update(body, { where: { id: id } });
+        await Movie.update(body, {where: {id: id}});
 
         res.send(movie);
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return {msg: "Something went wrong"};
     }
 };
 
@@ -140,18 +166,18 @@ const destroyMovie = async (req, res) => {
         let movie = await Movie.findByPk(id);
 
         if (movie === null) {
-            return { msg: "Movie not found" };
+            return {msg: "Movie not found"};
         }
 
         // await Movie_Genre.destroy({where: {movie_id: movie.id}});
-        await Movie.destroy({ where: { id: movie.id } });
+        await Movie.destroy({where: {id: movie.id}});
 
         res.status(204);
-        res.send({ msg: `Movie with id: ${movie.id} has been successfully deleted` });
+        res.send({msg: `Movie with id: ${movie.id} has been successfully deleted`});
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return {msg: "Something went wrong"};
     }
 };
 

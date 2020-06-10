@@ -55,8 +55,7 @@ const clean_db = async () => {
 
     for (let model of models) {
         await model.destroy({
-                truncate: true,
-                cascade: false
+                where: {}
             }
         );
     }

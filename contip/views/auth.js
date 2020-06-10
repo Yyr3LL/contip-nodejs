@@ -3,6 +3,8 @@ require('dotenv').config();
 const redis = require('redis');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const sequelize = require('../models').sequelize;
+
 
 const User = require('../models').User;
 
@@ -13,9 +15,8 @@ redis_client.on("error", (err) => {
 });
 
 
-
 const logIn = async (req, res) => {
-    const { username, password } = await req.body;
+    const {username, password} = await req.body;
     let data;
     try {
 
@@ -25,22 +26,22 @@ const logIn = async (req, res) => {
             }
         });
 
-        if (user === null) return { msg: "User not found" };
-        if (!bcrypt.compare(password, user.password)) return { msg: "Wrong password" };
+        if (user === null) return {msg: "User not found"};
+        if (!bcrypt.compare(password, user.password)) return {msg: "Wrong password"};
 
         user = {
             id: user.id,
         };
 
-        const accessToken = jwt.sign(user, process.env.ACCESS, { expiresIn: '2h' })
+        const accessToken = jwt.sign(user, process.env.ACCESS, {expiresIn: '2h'})
         const refreshToken = jwt.sign(user, process.env.REFRESH)
 
-        data = { user_id: user.id, access: accessToken, refresh: refreshToken }
+        data = {user_id: user.id, access: accessToken, refresh: refreshToken}
 
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return {msg: "Something went wrong"};
     }
 
     const response = {
@@ -57,22 +58,34 @@ const logIn = async (req, res) => {
 
 const getUserInfo = async (req, res) => {
     let user = await seq.query(`SELECT \"id\", \"username\", \"email\", \"createdAt\", \"updatedAt\" FROM \"Users\" AS \"User\" WHERE \"User\".\"id\" = ${token.id};\n`)
-    if (user === null) return { msg: "User not found" };
+    if (user === null) return {msg: "User not found"};
     res.send(user[0][0]);
 }
 
 const createUser = async (req, res) => {
-    const { username, email, password, re_password } = await req.body;
+    const {username, email, password, re_password} = await req.body;
     try {
 
         if (password !== re_password) {
-            return { msg: "re_password does not match" };
+            return {msg: "re_password does not match"};
         }
-        res.send(await User.create({ username, email, password, re_password }));
+
+        const result = await sequelize.transaction(async (t) => {
+            const user = await User.create({
+                username,
+                email,
+                password,
+                re_password
+            }, {transaction: t});
+
+            return user;
+        })
+
+        res.send(result);
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return {msg: "Something went wrong"};
     }
 }
 
@@ -94,8 +107,8 @@ const refreshToken = async (req, res) => {
         if (error) return res.sendStatus(500);
         if (reply === null) return res.sendStatus(403);
 
-        const accessToken = jwt.sign({ id: user_id }, process.env.ACCESS, { expiresIn: '2h' });
-        res.send({ access: accessToken });
+        const accessToken = jwt.sign({id: user_id}, process.env.ACCESS, {expiresIn: '2h'});
+        res.send({access: accessToken});
     })
 }
 
