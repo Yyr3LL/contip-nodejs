@@ -46,43 +46,6 @@ const User = sequelize.define('User', {
 });
 
 
-const JsonWebToken = sequelize.define('JsonWebToken', {
-
-    user_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: User,
-            key: 'id',
-        },
-        validate: {
-            isInt: true,
-            min: 0
-        }
-    },
-
-    access_token: {
-        type: DataTypes.STRING(64),
-        allowNull: false,
-        unique: true
-    },
-
-    refresh_token: {
-        type: DataTypes.STRING(64),
-        allowNull: false,
-        unique: true
-    }
-
-})
-
-
-JsonWebToken.belongsTo(User, {
-    onDelete: 'CASCADE',
-    hooks: true,
-    foreignKey: 'user_id'
-});
-
-
 const Genre = sequelize.define('Genre', {
 
     id: {
@@ -325,12 +288,39 @@ Movie.belongsToMany(User, {
 });
 
 
-if (process.argv[2] === "sync") {
-    (async () => {
-        await sequelize.sync({force: true});
+// const models = [
+//     User,
+//     UserWatchedMovie,
+//     UserPreference,
+//     Genre,
+//     Movie,
+//     Movie_Genre,
+//     Rating
+// ]
 
-    })();
+
+const sync_db = async () => {
+    await sequelize.sync({force: true});
+
+    // for (let model of models) {
+    //     await model.destroy({
+    //             truncate: true,
+    //             cascade: false
+    //         }
+    //     );
+    // }
 }
+
+
+const sync_model = async (model) => {
+    await model.sync({force: true});
+}
+
+
+if (process.argv[2] === "sync") {
+    sync_db();
+}
+
 
 module.exports = {
     User,
@@ -339,5 +329,8 @@ module.exports = {
     Movie_Genre,
     Rating,
     UserPreference,
-    UserWatchedMovie
+    UserWatchedMovie,
+    sequelize,
+    sync_db,
+    sync_model
 }
