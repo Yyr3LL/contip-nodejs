@@ -107,7 +107,7 @@ describe('Movies', () => {
                     genres: _genres
                 });
 
-            expect(res.statusCode).toEqual(400);
+            expect(res.statusCode).toEqual(202);
             expect(res).toHaveProperty('body');
             expect(res.body).toHaveProperty('msg');
         }
@@ -129,7 +129,7 @@ describe('Movies', () => {
                     genres: [123, 999, 1488, 1337]
                 });
 
-            expect(res.statusCode).toEqual(400);
+            expect(res.statusCode).toEqual(202);
             expect(res).toHaveProperty('body');
             expect(res.body).toHaveProperty('msg');
         }
@@ -141,7 +141,7 @@ describe('Movies', () => {
         async () => {
             const login = await get_auth_tokens(server);
 
-            const genres = [
+            const local_genres = [
                 _genres[0],
                 _genres[2]
             ];
@@ -153,7 +153,7 @@ describe('Movies', () => {
                     title: "Some Moive (1994)",
                     imdb: 34,
                     tmdb: 133,
-                    genres: genres
+                    genres: local_genres
                 });
 
 

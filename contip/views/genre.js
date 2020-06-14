@@ -18,11 +18,11 @@ const createGenre = async (req, res) => {
 const listGenre = async (req, res) => {
     try {
 
-        res.send(await Genre.findAll());
+        res.status(200).send(await Genre.findAll());
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        res.status(202).send({ msg: "Something went wrong" });
     }
 };
 
@@ -39,7 +39,7 @@ const getGenre = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        res.status(202).send({ msg: "Something went wrong" });
     }
 };
 

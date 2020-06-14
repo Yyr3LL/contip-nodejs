@@ -30,6 +30,7 @@ describe('Genres', () => {
         'it can create a genre',
         async done => {
             const login = await get_auth_tokens(server);
+
             const res = await request(server)
                 .post('/api/v1/app/genre/create')
                 .set({Authorization: `Bearer ${login.access}`})
@@ -37,7 +38,7 @@ describe('Genres', () => {
                     {
                         name: 'some_genre',
                     }
-                )
+                );
             const res2 = await request(server)
                 .post('/api/v1/app/genre/create')
                 .set({Authorization: `Bearer ${login.access}`})
@@ -45,7 +46,7 @@ describe('Genres', () => {
                     {
                         name: 'another_genre',
                     }
-                )
+                );
             const res3 = await request(server)
                 .post('/api/v1/app/genre/create')
                 .set({Authorization: `Bearer ${login.access}`})
@@ -53,8 +54,10 @@ describe('Genres', () => {
                     {
                         name: 'weird_genre',
                     }
-                )
+                );
             expect(res.statusCode).toEqual(200);
+            expect(res2.statusCode).toEqual(200);
+            expect(res3.statusCode).toEqual(200);
             done();
         }
     )
@@ -66,6 +69,7 @@ describe('Genres', () => {
             const res = await request(server)
                 .get('/api/v1/app/genre')
                 .set({Authorization: `Bearer ${login.access}`})
+
             expect(res.statusCode).toEqual(200);
             expect(res.body).toBeTruthy();
             expect(res.body).toBeInstanceOf(Array);

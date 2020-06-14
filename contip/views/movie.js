@@ -3,37 +3,34 @@ const Movie = require('../models').Movie;
 const Movie_Genre = require('../models').Movie_Genre;
 
 const check_existing_data = require('../service').check_existing_data;
+const check_all_data = require('../service').check_all_data;
 const get_clear_movie = require('../service').get_clear_movie;
+const unique_constraint_checking = require('../service').unique_constraint_checking;
 
 
 const createMovie = async (req, res) => {
     const {title, imdb, tmdb, genres} = await req.body;
     try {
 
-        let checking_data = [];
-
-        for (let genre_id of genres) {
-            checking_data.push(await check_existing_data(Genre, genre_id));
-        }
-
-        if (checking_data.includes(false)) {
-            res.status(400).send({msg: 'Given genres don\'t exist'});
+        if (!await check_all_data(Genre, genres)) {
+            return res.status(202).send({
+                msg: 'Given genres don\'t exist'
+            });
         }
 
         let movie;
 
-        try {
+        movie = await unique_constraint_checking(
+            Movie,
+            {title, imdb, tmdb},
+            "movie"
+        );
 
-            movie = await Movie.create({title, imdb, tmdb});
-
-        } catch (err) {
-            if (err.name === "SequelizeUniqueConstraintError") {
-                res.status(400).send({msg: 'A movie with given name already exists'});
-            }
-            else {
-                throw err;
-            }
+        if (movie.hasOwnProperty('msg')) {
+            return res.status(movie.code).send(movie.msg);
         }
+
+
         const cur_movie_id = movie.id;
 
         for (let genre of genres) {
@@ -47,13 +44,11 @@ const createMovie = async (req, res) => {
             include: Genre
         })
 
-        res.send(await get_clear_movie(movie));
+        return res.send(await get_clear_movie(movie));
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        console.log("#########################################33")
-        console.log(`${err.name}`);
-        return {msg: "Something went wrong"};
+        return res.status(202).send({msg: "Something went wrong"});
     }
 }
 
@@ -73,7 +68,10 @@ const listMovie = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: 'Something went wrong'};
+        res.status(202).send({
+            msg: 'Something went wrong',
+            err: `${err.name}`
+        });
     }
 };
 
@@ -98,7 +96,7 @@ const getMovie = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return res.status(202).send({msg: "Something went wrong"});
     }
 };
 
@@ -108,6 +106,20 @@ const putMovie = async (req, res) => {
     const body = await req.body;
     try {
 
+        // Checking if all the values were provided
+        const fields = ['title', 'imdb', 'tmdb', 'genres'];
+
+        if (fields.map(field => {
+            return body.hasOwnProperty(field);
+        }).includes(false)) {
+
+            return res.status(400).send({
+                msg: "Please provide all the values"
+            });
+
+        }
+
+
         let movie = await Movie.findOne({
             where: {
                 id: id
@@ -116,30 +128,18 @@ const putMovie = async (req, res) => {
         });
 
         if (movie === null) {
-            return {msg: "Movie not found"};
+            return res.status(400).send({
+                msg: "Movie not found"
+            });
         }
 
         movie = await get_clear_movie(movie);
 
-        const fields = ['title', 'imdb', 'tmdb', 'genres'];
 
-        if (fields.map(field => {
-            return body.hasOwnProperty(field);
-        }).includes(false)) {
-            return {msg: "Please provide all the values"};
-        }
-
-        let checking_data = [];
-
-        for (let genre_id of body.genres) {
-            for (let field of fields) {
-                checking_data.push(await check_existing_data(Genre, genre_id));
-                movie['dataValues'][field] = body[field];
-            }
-        }
-
-        if (checking_data.includes(false)) {
-            return {msg: "Incorrect data"};
+        if (!await check_all_data(Genre, body.genres)) {
+            return res.status(202).send({
+                msg: 'Given genres don\'t exist'
+            });
         }
 
         await Movie_Genre.destroy({where: {movie_id: id}});
@@ -150,11 +150,18 @@ const putMovie = async (req, res) => {
 
         await Movie.update(body, {where: {id: id}});
 
-        res.send(movie);
+        for (const field of fields) {
+            movie['dataValues'][field] = body[field];
+        }
+
+        return res.send(movie);
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return res.status(202).send({
+            msg: 'Something went wrong',
+            err: `${err.name}`
+        });
     }
 };
 
@@ -177,7 +184,7 @@ const destroyMovie = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        res.status(202).send({msg: "Something went wrong"});
     }
 };
 

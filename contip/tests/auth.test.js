@@ -30,9 +30,11 @@ describe('Auth', () => {
         'has access to resource with a token',
         async () => {
             const login = await get_auth_tokens(server);
+
             const res = await request(server)
                 .get('/api/v1/app/genre')
-                .set({Authorization: `Bearer ${login.access}`})
+                .set({Authorization: `Bearer ${login.access}`});
+
             expect(res.statusCode).toEqual(200);
         }
     )
@@ -42,6 +44,7 @@ describe('Auth', () => {
         async () => {
             const res = await request(server)
                 .get('/api/v1/app/genre')
+
             expect(res.statusCode).toEqual(401);
         }
     )
@@ -50,6 +53,7 @@ describe('Auth', () => {
         'it can refresh token and get access',
         async () => {
             const login = await get_auth_tokens(server);
+
             const new_access_token = await request(server)
                 .post('/api/v1/app/refresh')
                 .send({
@@ -58,6 +62,7 @@ describe('Auth', () => {
             const res = await request(server)
                 .get('/api/v1/app/genre')
                 .set({Authorization: `Bearer ${new_access_token.body.access}`})
+
             expect(res.statusCode).toEqual(200);
         }
     )

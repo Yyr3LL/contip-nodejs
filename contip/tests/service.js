@@ -2,8 +2,6 @@ const request = require('supertest');
 const {Sequelize} = require('sequelize');
 const sync_db = require('../models').sync_db;
 
-const db = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
-
 const get_server = async () => {
 
     const server = require('../../server');
@@ -60,6 +58,8 @@ const clean_db = async () => {
         );
     }
 };
+
+
 
 
 module.exports = {
