@@ -18,14 +18,13 @@ const createRating = async (req, res) => {
             return { msg: "Incorrect data" };
         }
 
-        value = parseInt(value, 10);
+        let rating_value = parseInt(value, 10);
 
-        res.status(201);
-        res.send(await Rating.create({ value, user_id, movie_id }));
+        return res.status(200).send(await Rating.create({ rating_value, user_id, movie_id }));
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return res.status(202).send({ msg: "Something went wrong" });
     }
 };
 

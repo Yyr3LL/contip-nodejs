@@ -46,9 +46,8 @@ const clean_db = async () => {
         require('../models').Genre,
         require('../models').Movie,
         require('../models').Movie_Genre,
-        require('../models').Rating,
         require('../models').UserWatchedMovie,
-        require('../models').UserPreference
+        require('../models').UserPreference,
     ]
 
     for (let model of models) {
@@ -58,8 +57,6 @@ const clean_db = async () => {
         );
     }
 };
-
-
 
 
 module.exports = {

@@ -1,7 +1,7 @@
 const {Sequelize, DataTypes} = require('sequelize');
 const bcrypt = require('bcrypt');
 
-const sequelize = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
+const sequelize = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db', {logging: false});
 
 
 const User = sequelize.define('User', {
@@ -260,6 +260,7 @@ const UserWatchedMovie = sequelize.define('UserWatchedList', {
 
     movie_id: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         references: {
             model: Movie,
             key: 'id',
@@ -269,46 +270,37 @@ const UserWatchedMovie = sequelize.define('UserWatchedList', {
             min: 0
         }
     },
+    value: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: {
+            isInt: true,
+            min: 0,
+            max: 100
+        }
+    },
 
 }, {timestamps: false});
 
 
 User.belongsToMany(Movie, {
     through: 'UserWatchedMovie',
-    onDelete: 'CASCADE',
-    hooks: true,
-    foreignKey: 'user_id'
+    foreignKey: 'user_id',
+    onDelete: 'cascade',
+    hooks: true
 });
 
 Movie.belongsToMany(User, {
     through: 'UserWatchedMovie',
-    onDelete: 'CASCADE',
-    hooks: true,
-    foreignKey: 'movie_id'
+    foreignKey: 'movie_id',
+    onDelete: 'cascade',
+    hooks: true
 });
-
-
-// const models = [
-//     User,
-//     UserWatchedMovie,
-//     UserPreference,
-//     Genre,
-//     Movie,
-//     Movie_Genre,
-//     Rating
-// ]
 
 
 const sync_db = async () => {
     await sequelize.sync({force: true});
 
-    // for (let model of models) {
-    //     await model.destroy({
-    //             truncate: true,
-    //             cascade: false
-    //         }
-    //     );
-    // }
 }
 
 
