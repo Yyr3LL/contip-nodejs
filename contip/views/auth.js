@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const sequelize = require('../models').sequelize;
 
 
-const User = require('../models').User;
+const {User} = require('../models');
 
 const redis_client = redis.createClient();
 

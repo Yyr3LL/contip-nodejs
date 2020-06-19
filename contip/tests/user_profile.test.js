@@ -142,6 +142,30 @@ describe('Movies', () => {
 
 
     it(
+        'it can add a movie to watched list without a rating value',
+        async () => {
+            const res = await request(server)
+                .put('/api/v1/app/watched')
+                .set({Authorization: `Bearer ${login.access}`})
+                .send({
+                    movies: [
+                        {
+                            movie_id: _movies[0],
+                            value: 50,
+                        },
+                        {
+                            movie_id: _movies[2]
+                        }
+                    ]
+                });
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toBeInstanceOf(Object);
+        }
+    )
+
+
+    it(
         'it can get list of watched movies',
         async () => {
             const res = await request(server)
@@ -151,6 +175,7 @@ describe('Movies', () => {
 
             expect(res.statusCode).toEqual(200);
             expect(res.body).toBeInstanceOf(Object);
+            expect(res.body.length).toEqual(2);
         }
     )
 

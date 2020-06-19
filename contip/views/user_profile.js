@@ -1,8 +1,8 @@
-const User = require('../models').User;
-const Movie = require('../models').Movie;
-const Genre = require('../models').Genre;
-const UserPreference = require('../models').UserPreference;
-const UserWatchedMovie = require('../models').UserWatchedMovie;
+const {User} = require('../models');
+const {Genre} = require('../models');
+const {Movie} = require('../models');
+const {UserPreference} = require('../models');
+const {UserWatchedMovie} = require('../models');
 
 const check_existing_data = require('../service').check_existing_data;
 
@@ -66,7 +66,6 @@ const putWatchedMovies = async (req, res) => {
         ]
 
         for (let movie of movies) {
-            console.log(movie);
             list.push(await check_existing_data(Movie, movie.movie_id))
         }
 
@@ -82,16 +81,24 @@ const putWatchedMovies = async (req, res) => {
 
         let result_movies = [];
 
-        for (let movie of movies) {
-            result_movies.push(
-                await UserWatchedMovie.create({
-                    user_id: user_id,
-                    movie_id: movie.movie_id,
-                    value: movie.value
-                })
-            );
-        }
+        for (const movie of movies) {
 
+            let watched_movie = {
+                user_id: user_id,
+                movie_id: movie.movie_id
+            }
+
+            if (movie.hasOwnProperty('value')) {
+                watched_movie.value = movie.value;
+            } else {
+                watched_movie.value = null;
+            }
+
+            result_movies.push(
+                await UserWatchedMovie.create(watched_movie)
+            );
+
+        }
 
         return res.send(result_movies);
 

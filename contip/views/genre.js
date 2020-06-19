@@ -1,4 +1,5 @@
-const Genre = require('../models').Genre;
+const {Genre} = require('../models')
+;
 
 
 const createGenre = async (req, res) => {
