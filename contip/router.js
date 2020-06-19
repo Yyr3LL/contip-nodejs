@@ -123,37 +123,6 @@ router.delete(
 );
 /*
 *
-* RATING ENDPOINTS
-*
-* */
-router.post(
-    '/rating/create',
-    JWTAuth,
-    views.rating.createRating
-);
-
-
-router.get(
-    '/rating/:id',
-    JWTAuth,
-    views.rating.getRating
-);
-
-
-router.put(
-    '/rating/:id',
-    JWTAuth,
-    views.rating.putRating
-);
-
-
-router.delete(
-    '/rating/:id',
-    JWTAuth,
-    views.rating.destroyRating
-);
-/*
-*
 * USER PROFILE ENDPOINTS
 *
 * */

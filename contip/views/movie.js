@@ -1,8 +1,8 @@
-const Genre = require('../models').Genre;
-const Movie = require('../models').Movie;
-const Movie_Genre = require('../models').Movie_Genre;
 
-const check_existing_data = require('../service').check_existing_data;
+const {Genre} = require('../models');
+const {Movie} = require('../models');
+const {Movie_Genre} = require('../models');
+
 const check_all_data = require('../service').check_all_data;
 const get_clear_movie = require('../service').get_clear_movie;
 const unique_constraint_checking = require('../service').unique_constraint_checking;

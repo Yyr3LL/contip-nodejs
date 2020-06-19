@@ -1,4 +1,5 @@
-const Genre = require('../models').Genre;
+const {Genre} = require('../models')
+;
 
 
 const createGenre = async (req, res) => {
@@ -9,7 +10,7 @@ const createGenre = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return res.status(202).send({ msg: "Something went wrong" });
     }
     res.send(genre);
 };

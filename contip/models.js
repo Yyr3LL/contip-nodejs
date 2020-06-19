@@ -1,7 +1,7 @@
 const {Sequelize, DataTypes} = require('sequelize');
 const bcrypt = require('bcrypt');
 
-const sequelize = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db');
+const sequelize = new Sequelize('postgres://yyr3ll:7331@localhost:5432/db', {logging: false});
 
 
 const User = sequelize.define('User', {
@@ -138,52 +138,6 @@ Genre.belongsToMany(Movie, {
 });
 
 
-const Rating = sequelize.define('Rating', {
-
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-        unique: true
-    },
-
-    value: {
-        type: DataTypes.INTEGER,
-        validate: {
-            isInt: true,
-            min: 0,
-            max: 100
-        }
-    },
-
-    user_id: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: User,
-            key: 'id',
-        },
-        validate: {
-            isInt: true,
-            min: 0
-        }
-
-    },
-
-    movie_id: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: Movie,
-            key: 'id',
-        },
-        validate: {
-            isInt: true,
-            min: 0
-        }
-    },
-
-}, {timestamps: false});
-
-
 const UserPreference = sequelize.define('UserPreferences', {
 
     id: {
@@ -196,10 +150,6 @@ const UserPreference = sequelize.define('UserPreferences', {
     user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: User,
-            key: 'id',
-        },
         validate: {
             isInt: true,
             min: 0
@@ -208,10 +158,6 @@ const UserPreference = sequelize.define('UserPreferences', {
 
     genre_id: {
         type: DataTypes.INTEGER,
-        references: {
-            model: Genre,
-            key: 'id',
-        },
         validate: {
             isInt: true,
             min: 0
@@ -223,16 +169,16 @@ const UserPreference = sequelize.define('UserPreferences', {
 
 User.belongsToMany(Genre, {
     through: 'UserPreference',
+    foreignKey: 'user_id',
     onDelete: 'CASCADE',
     hooks: true,
-    foreignKey: 'user_id'
 });
 
 Genre.belongsToMany(User, {
     through: 'UserPreference',
+    foreignKey: 'genre_id',
     onDelete: 'CASCADE',
     hooks: true,
-    foreignKey: 'genre_id'
 });
 
 
@@ -248,10 +194,6 @@ const UserWatchedMovie = sequelize.define('UserWatchedList', {
     user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: User,
-            key: 'id',
-        },
         validate: {
             isInt: true,
             min: 0
@@ -260,13 +202,19 @@ const UserWatchedMovie = sequelize.define('UserWatchedList', {
 
     movie_id: {
         type: DataTypes.INTEGER,
-        references: {
-            model: Movie,
-            key: 'id',
-        },
+        allowNull: false,
         validate: {
             isInt: true,
             min: 0
+        }
+    },
+    value: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: {
+            isInt: true,
+            min: 0,
+            max: 100
         }
     },
 
@@ -275,40 +223,22 @@ const UserWatchedMovie = sequelize.define('UserWatchedList', {
 
 User.belongsToMany(Movie, {
     through: 'UserWatchedMovie',
+    foreignKey: 'user_id',
     onDelete: 'CASCADE',
-    hooks: true,
-    foreignKey: 'user_id'
+    hooks: true
 });
 
 Movie.belongsToMany(User, {
     through: 'UserWatchedMovie',
+    foreignKey: 'movie_id',
     onDelete: 'CASCADE',
-    hooks: true,
-    foreignKey: 'movie_id'
+    hooks: true
 });
-
-
-// const models = [
-//     User,
-//     UserWatchedMovie,
-//     UserPreference,
-//     Genre,
-//     Movie,
-//     Movie_Genre,
-//     Rating
-// ]
 
 
 const sync_db = async () => {
     await sequelize.sync({force: true});
 
-    // for (let model of models) {
-    //     await model.destroy({
-    //             truncate: true,
-    //             cascade: false
-    //         }
-    //     );
-    // }
 }
 
 
@@ -327,7 +257,6 @@ module.exports = {
     Genre,
     Movie,
     Movie_Genre,
-    Rating,
     UserPreference,
     UserWatchedMovie,
     sequelize,

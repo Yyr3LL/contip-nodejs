@@ -4,7 +4,7 @@
   "description": "Writing ConTip project in node js",
   "main": "index.js",
   "scripts": {
-    "test": "jest --silent --verbose --coverage --forceExit --watchAll --maxWorkers=1"
+    "test": "jest --verbose --coverage --forceExit --watchAll --maxWorkers=1"
   },
   "repository": {
     "type": "git",

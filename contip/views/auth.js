@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const sequelize = require('../models').sequelize;
 
 
-const User = require('../models').User;
+const {User} = require('../models');
 
 const redis_client = redis.createClient();
 
@@ -47,13 +47,13 @@ const logIn = async (req, res) => {
     const response = {
         access: data.access,
         refresh: data.refresh
-    }
+    };
 
     redis_client.set(data.user_id, data.refresh, redis.print);
 
     res.send(response);
 
-}
+};
 
 
 const getUserInfo = async (req, res) => {

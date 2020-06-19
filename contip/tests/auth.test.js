@@ -9,9 +9,13 @@ let server;
 
 describe('Auth', () => {
 
+    let login;
+
     beforeAll(async () => {
-        server = require('../../server');
         clean_db();
+
+        server = require('../../server');
+
         await request(server)
             .post('/api/v1/app/signup')
             .send({
@@ -20,6 +24,7 @@ describe('Auth', () => {
                 password: '123',
                 re_password: '123'
             });
+        login = await get_auth_tokens(server);
     })
 
     afterAll(async () => {
@@ -29,7 +34,6 @@ describe('Auth', () => {
     it(
         'has access to resource with a token',
         async () => {
-            const login = await get_auth_tokens(server);
 
             const res = await request(server)
                 .get('/api/v1/app/genre')

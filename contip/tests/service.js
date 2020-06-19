@@ -1,13 +1,5 @@
 const request = require('supertest');
-const {Sequelize} = require('sequelize');
-const sync_db = require('../models').sync_db;
-
-const get_server = async () => {
-
-    const server = require('../../server');
-    return server;
-
-};
+const {sync_db} = require('../models');
 
 
 const create_user = async (server) => {
@@ -46,9 +38,8 @@ const clean_db = async () => {
         require('../models').Genre,
         require('../models').Movie,
         require('../models').Movie_Genre,
-        require('../models').Rating,
         require('../models').UserWatchedMovie,
-        require('../models').UserPreference
+        require('../models').UserPreference,
     ]
 
     for (let model of models) {
@@ -60,10 +51,7 @@ const clean_db = async () => {
 };
 
 
-
-
 module.exports = {
-    get_server,
     create_user,
     get_auth_tokens,
     clean_db

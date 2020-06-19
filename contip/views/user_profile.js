@@ -1,8 +1,8 @@
-const User = require('../models').User;
-const Movie = require('../models').Movie;
-const Genre = require('../models').Genre;
-const UserPreference = require('../models').UserPreference;
-const UserWatchedMovie = require('../models').UserWatchedMovie;
+const {User} = require('../models');
+const {Genre} = require('../models');
+const {Movie} = require('../models');
+const {UserPreference} = require('../models');
+const {UserWatchedMovie} = require('../models');
 
 const check_existing_data = require('../service').check_existing_data;
 
@@ -22,7 +22,7 @@ const putPreferences = async (req, res) => {
         }
 
         if (list.includes(false)) {
-            return { msg: "Incorrect data" };
+            return {msg: "Incorrect data"};
         }
 
         await UserPreference.destroy({
@@ -32,33 +32,45 @@ const putPreferences = async (req, res) => {
         });
 
         for (let genre_id of genres) {
-            await UserPreference.create({ user_id, genre_id });
+            await UserPreference.create({user_id, genre_id});
         }
 
         res.send(genres);
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return {msg: "Something went wrong"};
     }
 }
 
 
 const putWatchedMovies = async (req, res) => {
-    const movies = await req.body.movies;
-    const user_id = await req.user.id;
+    let movies;
+    let user_id;
+
+    const body = await req.body;
+
+    if (!body.hasOwnProperty('movies')) {
+        return res.status(400).send({
+            msg: 'You haven\'t any provided data'
+        })
+    }
+
+    movies = body.movies;
+    user_id = await req.user.id;
+
     try {
 
         let list = [
             await check_existing_data(User, user_id),
         ]
 
-        for (let movie_id of movies) {
-            list.push(await check_existing_data(Movie, movie_id))
+        for (let movie of movies) {
+            list.push(await check_existing_data(Movie, movie.movie_id))
         }
 
         if (list.includes(false)) {
-            return { msg: "Incorrect data" };
+            return res.status(400).send({msg: "Incorrect data"});
         }
 
         await UserWatchedMovie.destroy({
@@ -67,18 +79,34 @@ const putWatchedMovies = async (req, res) => {
             }
         });
 
-        for (let movie_id of movies) {
-            await UserWatchedMovie.create({ user_id, movie_id });
+        let result_movies = [];
+
+        for (const movie of movies) {
+
+            let watched_movie = {
+                user_id: user_id,
+                movie_id: movie.movie_id
+            }
+
+            if (movie.hasOwnProperty('value')) {
+                watched_movie.value = movie.value;
+            } else {
+                watched_movie.value = null;
+            }
+
+            result_movies.push(
+                await UserWatchedMovie.create(watched_movie)
+            );
+
         }
 
-        res.send(movies);
+        return res.send(result_movies);
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return res.status(202).send({msg: 'Something went wrong'});
     }
 }
-
 
 
 const getPreferences = async (req, res) => {
@@ -101,7 +129,7 @@ const getPreferences = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return {msg: "Something went wrong"};
     }
 }
 
@@ -117,16 +145,20 @@ const getWatchedMovies = async (req, res) => {
         });
 
         let movies = watched_movies.map(item => {
-            return item['dataValues']['movie_id'];
+            return {
+                movie_id: item['dataValues']['movie_id'],
+                value: item['dataValues']['value']
+            }
         })
 
-        console.log(movies);
-
-        res.send(movies);
+        return res.send(movies);
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return { msg: "Something went wrong" };
+        return res.status(202).send({
+            msg: 'Something went wrong',
+            err: `${err.name}`
+        });
     }
 }
 
