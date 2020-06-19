@@ -171,14 +171,14 @@ User.belongsToMany(Genre, {
     through: 'UserPreference',
     foreignKey: 'user_id',
     onDelete: 'CASCADE',
-    hooks: true,
+    hooks: true
 });
 
 Genre.belongsToMany(User, {
     through: 'UserPreference',
     foreignKey: 'genre_id',
     onDelete: 'CASCADE',
-    hooks: true,
+    hooks: true
 });
 
 

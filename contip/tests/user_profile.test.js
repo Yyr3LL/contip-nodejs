@@ -180,4 +180,63 @@ describe('Movies', () => {
     )
 
 
+    it(
+        'it can change genres in preferences list',
+        async () => {
+            const res = await request(server)
+                .put('/api/v1/app/preferences')
+                .set({Authorization: `Bearer ${login.access}`})
+                .send({
+                    genres: [
+			_genres[0],
+			_genres[1],
+                    ]
+                });
+
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toBeInstanceOf(Object);
+            expect(res.body.length).toEqual(2);
+        }
+    )
+
+
+    it(
+        'it can\'t add invalid genre ids to preferences list',
+        async () => {
+            const res = await request(server)
+                .put('/api/v1/app/preferences')
+                .set({Authorization: `Bearer ${login.access}`})
+                .send({
+                    genres: [
+			10000,
+			228,
+                    ]
+                });
+
+
+            expect(res.statusCode).toEqual(400);
+            expect(res.body).toBeInstanceOf(Object);
+            expect(res.body.msg).toEqual('Incorrect data');
+        }
+    )
+
+
+    it(
+        'it can\'t send invalid data',
+        async () => {
+            const res = await request(server)
+                .put('/api/v1/app/preferences')
+                .set({Authorization: `Bearer ${login.access}`})
+                .send({
+		    fuzz: 'buzz'
+                });
+
+
+            expect(res.statusCode).toEqual(400);
+            expect(res.body).toBeInstanceOf(Object);
+            expect(res.body.msg).toEqual('Incorrect data');
+        }
+    )
+
 })

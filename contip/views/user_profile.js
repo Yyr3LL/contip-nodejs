@@ -5,6 +5,7 @@ const {UserPreference} = require('../models');
 const {UserWatchedMovie} = require('../models');
 
 const check_existing_data = require('../service').check_existing_data;
+const {check_all_data} = require('../service');
 
 
 const putPreferences = async (req, res) => {
@@ -17,12 +18,10 @@ const putPreferences = async (req, res) => {
             await check_existing_data(User, user_id),
         ]
 
-        for (let genre_id of genres) {
-            list.push(await check_existing_data(Genre, genre_id))
-        }
-
-        if (list.includes(false)) {
-            return {msg: "Incorrect data"};
+        if (!await check_all_data(Genre, genres)) {
+            return res.status(400).send({
+                msg: 'Incorrect data'
+            });
         }
 
         await UserPreference.destroy({
@@ -39,7 +38,10 @@ const putPreferences = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return res.status(202).send({
+            msg: 'Something went wrong',
+            err: `${err.name}`
+        });
     }
 }
 
@@ -104,7 +106,10 @@ const putWatchedMovies = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return res.status(202).send({msg: 'Something went wrong'});
+        return res.status(202).send({
+            msg: 'Something went wrong',
+            err: `${err.name}`
+        });
     }
 }
 
@@ -129,7 +134,10 @@ const getPreferences = async (req, res) => {
 
     } catch (err) {
         console.log(`Error: ${err.name}  ${err.stack}`);
-        return {msg: "Something went wrong"};
+        return res.status(202).send({
+            msg: 'Something went wrong',
+            err: `${err.name}`
+        });
     }
 }
 
